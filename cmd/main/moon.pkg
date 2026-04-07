@@ -1,0 +1,7 @@
+// import {
+//   "wflixu/Orion" @lib,
+// }
+
+options(
+  "is-main": true,
+)
