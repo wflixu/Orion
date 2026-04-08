@@ -107,11 +107,27 @@ pub fn generate_from_sql(
 
       // 为每个查询生成代码
       for query in queries {
-        // 生成结构体
-        let fields : Array[(String, String)] = [] // TODO: 从 SQL 推断字段
-        code = code + @codegen.gen_struct(struct_name, fields)
+        // 从 SQL 推断字段
+        let fields = @codegen.infer_fields_from_sql(query.sql)
 
-        // 生成函数
+        // 生成结构体
+        if Array::length(fields) > 0 {
+          code = code + @codegen.gen_struct(struct_name, fields)
+        } else {
+          // 如果没有推断出字段，使用默认字段
+          let default_fields = [("id", "String"), ("data", "String")]
+          code = code + @codegen.gen_struct(struct_name, default_fields)
+        }
+
+        // 生成映射函数
+        let actual_fields = if Array::length(fields) > 0 {
+          fields
+        } else {
+          [("id", "String"), ("data", "String")]
+        }
+        code = code + @codegen.gen_from_db_value(struct_name, actual_fields)
+
+        // 生成查询函数
         code = code + @codegen.gen_function(query, struct_name)
       }
 
