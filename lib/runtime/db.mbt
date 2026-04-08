@@ -6,9 +6,7 @@
 pub enum DbError {
   ConnectionError(String)
   QueryError(String)
-  NotFound
   PoolExhausted
-  Timeout(String)
 }
 
 ///|
@@ -60,8 +58,8 @@ pub fn close(db : Db) -> Result[Unit, DbError] {
 /// 执行查询
 pub fn query(
   db : Db,
-  sql : String,
-  params : Array[DbValue],
+  _sql : String,
+  _params : Array[DbValue],
 ) -> Result[Array[DbValue], DbError] {
   if !db.connected {
     return Err(DbError::ConnectionError("Not connected"))
@@ -74,8 +72,8 @@ pub fn query(
 /// 执行命令（返回影响行数）
 pub fn execute(
   db : Db,
-  sql : String,
-  params : Array[DbValue],
+  _sql : String,
+  _params : Array[DbValue],
 ) -> Result[Int, DbError] {
   if !db.connected {
     return Err(DbError::ConnectionError("Not connected"))

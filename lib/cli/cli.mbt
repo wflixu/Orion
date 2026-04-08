@@ -85,10 +85,68 @@ pub fn run_migrate(db_url : String) -> Result[Unit, String] {
 
 ///|
 /// 从 SQL 目录生成代码
-pub fn generate_from_dir(sql_dir : String) -> Result[String, String] {
+/// 扫描目录下所有 .sql 文件，生成对应的 MoonBit 代码
+pub fn generate_from_dir(
+  sql_dir : String,
+  output_dir : String,
+) -> Result[Unit, String] {
   println("Scanning SQL files in: " + sql_dir)
-  // TODO: 实现目录扫描和代码生成
-  Ok("// Generated code from: " + sql_dir)
+
+  // TODO: 使用 os.listdir 扫描目录获取 .sql 文件列表
+  // 当前 MoonBit 标准库文件系统 API 有限，此处为简化实现
+  // 实际实现示例：
+  // let files = os.listdir(sql_dir)
+  // let sql_files = Array::filter(files, fn(f) => f.has_suffix(".sql"))
+
+  // 简化实现：假设调用方已经知道要处理哪些 SQL 文件
+  // 实际项目中可通过外部脚本或构建工具先收集 SQL 文件列表
+
+  // 从 sql_dir 提取表名作为 struct_name
+  // 例如：sql/users.sql -> User
+  let struct_name = extract_struct_name_from_dir(sql_dir)
+
+  // TODO: 读取 SQL 文件内容
+  // 当前简化实现：返回提示信息
+  println("Processing directory: " + sql_dir)
+  println("Output directory: " + output_dir)
+  println("Struct name: " + struct_name)
+  println("Note: Full directory scanning requires MoonBit os.listdir API")
+  println("Use generate_from_sql() for processing individual SQL files")
+
+  Ok(())
+}
+
+///|
+/// 从目录路径提取结构体名称
+fn extract_struct_name_from_dir(dir : String) -> String {
+  // 从路径提取最后一部分并转换为帕斯卡命名
+  // 例如："sql/users" -> "users" -> "User"
+  // 例如："sql/user_queries" -> "user_queries" -> "UserQueries"
+
+  // 查找最后一个 /
+  let last_slash_idx = find_last_slash(dir)
+  let name_part = if last_slash_idx >= 0 {
+    dir[last_slash_idx + 1:].to_string()
+  } else {
+    dir
+  }
+
+  // 转换为帕斯卡命名
+  @codegen.to_pascal_case(name_part)
+}
+
+///|
+/// 查找字符串中最后一个 / 的位置
+fn find_last_slash(s : String) -> Int {
+  let len = s.length()
+  let mut i = len - 1
+  while i >= 0 {
+    if s[i].to_char() == Some('/') {
+      return i
+    }
+    i -= 1
+  }
+  -1
 }
 
 ///|

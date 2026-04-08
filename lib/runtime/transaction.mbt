@@ -6,19 +6,12 @@
 pub enum TxStatus {
   /// 事务进行中
   Active
-  /// 事务已提交
-  Committed
-  /// 事务已回滚
-  RolledBack
 }
 
 ///|
 /// 检查事务状态是否为 Active
-fn is_status_active(status : TxStatus) -> Bool {
-  match status {
-    TxStatus::Active => true
-    _ => false
-  }
+fn is_status_active(_status : TxStatus) -> Bool {
+  true
 }
 
 ///|

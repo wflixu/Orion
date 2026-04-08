@@ -13,7 +13,7 @@ test "get connection from pool" {
   let pool = make_pool(config)
   let result = get_connection(pool)
   match result {
-    Ok(db) => assert_eq(db.connected, true)
+    Ok((db, _new_pool)) => assert_eq(db.connected, true)
     Err(_) => println("get_connection failed")
   }
 }
@@ -24,8 +24,8 @@ test "return connection to pool" {
   let pool = make_pool(config)
   let conn_result = get_connection(pool)
   match conn_result {
-    Ok(db) => {
-      let _ = return_connection(pool, db)
+    Ok((db, new_pool)) => {
+      let _returned_pool = return_connection(new_pool, db)
     }
     Err(_) => println("get_connection failed")
   }
@@ -51,17 +51,49 @@ test "pool_size returns positive" {
 }
 
 ///|
-test "get_connection multiple times" {
+test "get_connection multiple times from same pool" {
   let config = make_db_config("sqlite://test.db", 3)
   let pool = make_pool(config)
   let result1 = get_connection(pool)
-  let result2 = get_connection(pool)
   match result1 {
-    Ok(db1) =>
+    Ok((db1, pool2)) => {
+      let result2 = get_connection(pool2)
       match result2 {
-        Ok(db2) => assert_eq(db1.connected && db2.connected, true)
+        Ok((db2, _pool3)) => assert_eq(db1.connected && db2.connected, true)
         Err(_) => println("second get_connection failed")
       }
+    }
     Err(_) => println("first get_connection failed")
+  }
+}
+
+///|
+test "get_connection removes from available" {
+  let config = make_db_config("sqlite://test.db", 3)
+  let pool = make_pool(config)
+  let initial_size = pool_size(pool)
+  let result = get_connection(pool)
+  match result {
+    Ok((_db, new_pool)) => {
+      let new_size = pool_size(new_pool)
+      assert_eq(new_size, initial_size - 1)
+    }
+    Err(_) => println("get_connection failed")
+  }
+}
+
+///|
+test "return_connection adds back to available" {
+  let config = make_db_config("sqlite://test.db", 3)
+  let pool = make_pool(config)
+  let result = get_connection(pool)
+  match result {
+    Ok((db, new_pool)) => {
+      let size_after_get = pool_size(new_pool)
+      let returned_pool = return_connection(new_pool, db)
+      let size_after_return = pool_size(returned_pool)
+      assert_eq(size_after_return, size_after_get + 1)
+    }
+    Err(_) => println("get_connection failed")
   }
 }

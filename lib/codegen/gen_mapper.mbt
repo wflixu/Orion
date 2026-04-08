@@ -230,34 +230,86 @@ fn gen_params(count : Int) -> String {
 }
 
 ///|
-/// 将驼峰命名转换为蛇形命名 - 简化版本
+/// 将驼峰命名转换为蛇形命名
+/// 例如：getUserById -> get_user_by_id
 pub fn to_snake_case(name : String) -> String {
-  // 简单处理：只处理常见模式
-  if name == "getUserById" {
-    "get_user_by_id"
-  } else if name == "User" {
-    "user"
-  } else if name == "createUser" {
-    "create_user"
-  } else if name == "listUsers" {
-    "list_users"
-  } else if name == "updateUser" {
-    "update_user"
-  } else if name == "deleteUser" {
-    "delete_user"
-  } else {
-    name
+  if name.length() == 0 {
+    return ""
   }
+
+  let mut result = ""
+  let mut i = 0
+  let len = name.length()
+
+  while i < len {
+    let c_int = name[i]
+    let c = c_int.to_char()
+    match c {
+      Some(ch) =>
+        // Check if uppercase
+        if ch >= 'A' && ch <= 'Z' {
+          let lower_int = ch.to_int() + 32
+          match lower_int.to_char() {
+            Some(lower_ch) =>
+              if i > 0 {
+                result = result + "_" + lower_ch.to_string()
+              } else {
+                result = result + lower_ch.to_string()
+              }
+            None => result = result + ch.to_string()
+          }
+        } else {
+          result = result + ch.to_string()
+        }
+      None => ()
+    }
+    i += 1
+  }
+
+  result
 }
 
 ///|
-/// 将蛇形命名转换为帕斯卡命名 - 简化版本
+/// 将蛇形命名转换为帕斯卡命名
+/// 例如：get_user_by_id -> GetUserById
 pub fn to_pascal_case(name : String) -> String {
-  if name == "user" {
-    "User"
-  } else if name == "get_user_by_id" {
-    "GetUserById"
-  } else {
-    name
+  if name.length() == 0 {
+    return ""
   }
+
+  let mut result = ""
+  let mut capitalize_next = true
+  let mut i = 0
+  let len = name.length()
+
+  while i < len {
+    let c_int = name[i]
+    let c = c_int.to_char()
+    match c {
+      Some(ch) =>
+        if ch == '_' {
+          capitalize_next = true
+        } else if capitalize_next && ch >= 'a' && ch <= 'z' {
+          // Convert to uppercase
+          let upper_int = ch.to_int() - 32
+          match upper_int.to_char() {
+            Some(upper_ch) => {
+              result = result + upper_ch.to_string()
+              capitalize_next = false
+            }
+            None => {
+              result = result + ch.to_string()
+              capitalize_next = false
+            }
+          }
+        } else {
+          result = result + ch.to_string()
+          capitalize_next = false
+        }
+      None => ()
+    }
+    i += 1
+  }
+
+  result
 }

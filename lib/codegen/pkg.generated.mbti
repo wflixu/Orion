@@ -1,0 +1,32 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wflixu/Orion/lib/codegen"
+
+import {
+  "wflixu/Orion/lib/parser",
+}
+
+// Values
+pub fn gen_from_db_value(String, Array[(String, String)]) -> String
+
+pub fn gen_function(@parser.QueryMeta, String) -> String
+
+pub fn gen_struct(String, Array[(String, String)]) -> String
+
+pub fn gen_struct_from_sql(String, String) -> String
+
+pub fn infer_fields_from_sql(String) -> Array[(String, String)]
+
+pub fn sql_type_to_moonbit(String) -> String
+
+pub fn to_pascal_case(String) -> String
+
+pub fn to_snake_case(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

@@ -28,28 +28,46 @@ pub fn make_pool(config : DbConfig) -> Pool {
 
 ///|
 /// 从池中获取连接
-pub fn get_connection(pool : Pool) -> Result[Db, DbError] {
+pub fn get_connection(pool : Pool) -> Result[(Db, Pool), DbError] {
   if Array::length(pool.available) > 0 {
+    // 从池中取出第一个连接
     let db = pool.available[0]
-    // 简化实现：直接从数组取第一个
-    // 实际需要从池中移除
-    Ok(db)
+    // 创建新的 available 数组，移除第一个元素
+    let new_available : Array[Db] = []
+    let mut i = 1
+    while i < Array::length(pool.available) {
+      new_available.push(pool.available[i])
+      i += 1
+    }
+    let new_pool = {
+      config: pool.config,
+      available: new_available,
+      active_count: pool.active_count + 1,
+    }
+    Ok((db, new_pool))
   } else if pool.active_count >= pool.config.pool_size {
     Err(DbError::PoolExhausted)
   } else {
     // 创建新连接
     let new_db = connect(pool.config)
-    Ok(new_db)
+    let new_pool = {
+      config: pool.config,
+      available: pool.available,
+      active_count: pool.active_count + 1,
+    }
+    Ok((new_db, new_pool))
   }
 }
 
 ///|
 /// 归还连接到池中
-pub fn return_connection(pool : Pool, _db : Db) -> Pool {
-  // 简化实现：只更新计数
+pub fn return_connection(pool : Pool, db : Db) -> Pool {
+  // 将连接添加回可用列表
+  let new_available = pool.available
+  new_available.push(db)
   {
     config: pool.config,
-    available: pool.available,
+    available: new_available,
     active_count: pool.active_count - 1,
   }
 }
