@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/array",
+  "wflixu/Orion/lib/parser",
+  "wflixu/Orion/lib/codegen",
+}
+
+options(
+  "is-main": false,
+)

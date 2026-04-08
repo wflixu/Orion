@@ -1,0 +1,87 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wflixu/Orion/lib/runtime"
+
+// Values
+pub fn begin_tx(Db) -> Result[Tx, DbError]
+
+pub fn close(Db) -> Result[Unit, DbError]
+
+pub fn close_pool(Pool) -> Result[Unit, DbError]
+
+pub fn commit_tx(Tx) -> Result[Unit, DbError]
+
+pub fn connect(DbConfig) -> Db
+
+pub fn execute(Db, String, Array[DbValue]) -> Result[Int, DbError]
+
+pub fn get_connection(Pool) -> Result[(Db, Pool), DbError]
+
+pub fn is_tx_active(Tx) -> Bool
+
+pub fn make_db_config(String, Int) -> DbConfig
+
+pub fn make_db_value_bool(Bool) -> DbValue
+
+pub fn make_db_value_int(Int) -> DbValue
+
+pub fn make_db_value_null() -> DbValue
+
+pub fn make_db_value_string(String) -> DbValue
+
+pub fn make_pool(DbConfig) -> Pool
+
+pub fn pool_size(Pool) -> Int
+
+pub fn query(Db, String, Array[DbValue]) -> Result[Array[DbValue], DbError]
+
+pub fn return_connection(Pool, Db) -> Pool
+
+pub fn rollback_tx(Tx) -> Result[Unit, DbError]
+
+pub fn[T] with_transaction(Db, (Tx) -> Result[T, DbError]) -> Result[T, DbError]
+
+// Errors
+
+// Types and methods
+pub struct Db {
+  config : DbConfig
+  connected : Bool
+}
+
+pub struct DbConfig {
+  url : String
+  pool_size : Int
+}
+
+pub enum DbError {
+  ConnectionError(String)
+  QueryError(String)
+  PoolExhausted
+}
+
+pub enum DbValue {
+  Null
+  Int(Int)
+  String(String)
+  Bool(Bool)
+}
+
+pub struct Pool {
+  config : DbConfig
+  available : Array[Db]
+  active_count : Int
+}
+
+pub struct Tx {
+  db : Db
+  status : TxStatus
+}
+
+pub enum TxStatus {
+  Active
+}
+
+// Type aliases
+
+// Traits
+

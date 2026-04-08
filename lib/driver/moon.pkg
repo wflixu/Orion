@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/array",
+  "wflixu/Orion/lib/runtime",
+}
+
+options(
+  "is-main": false,
+)

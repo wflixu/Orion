@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wflixu/Orion/lib/parser"
+
+// Values
+pub fn is_affected_rows(ResultType) -> Bool
+
+pub fn parse_sql_file(String) -> Result[Array[QueryMeta], String]
+
+// Errors
+
+// Types and methods
+pub struct QueryMeta {
+  name : String
+  description : String?
+  result_type : ResultType
+  sql : String
+  param_count : Int
+  is_dynamic : Bool
+}
+
+pub enum ResultType {
+  Single
+  Many
+  LastInsertId
+  AffectedRows
+}
+
+// Type aliases
+
+// Traits
+

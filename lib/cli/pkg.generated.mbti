@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wflixu/Orion/lib/cli"
+
+// Values
+pub fn generate_from_dir(String, String) -> Result[Unit, String]
+
+pub fn generate_from_sql(String, String) -> Result[String, String]
+
+pub fn get_args() -> Array[String]
+
+pub fn parse_args(Array[String]) -> Command
+
+pub fn run_generate(String) -> Result[Unit, String]
+
+pub fn run_migrate(String) -> Result[Unit, String]
+
+pub fn show_help() -> Unit
+
+// Errors
+
+// Types and methods
+pub enum Command {
+  Generate(String)
+  Migrate(String)
+  Help
+}
+
+// Type aliases
+
+// Traits
+

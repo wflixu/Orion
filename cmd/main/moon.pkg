@@ -1,6 +1,6 @@
-// import {
-//   "wflixu/Orion" @lib,
-// }
+import {
+  "wflixu/Orion/lib/cli",
+}
 
 options(
   "is-main": true,

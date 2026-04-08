@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wflixu/Orion/lib/driver"
+
+import {
+  "wflixu/Orion/lib/runtime",
+}
+
+// Values
+pub fn make_postgres_driver(String) -> PostgresDriver
+
+pub fn make_sqlite_driver(String) -> SQLiteDriver
+
+pub fn postgres_connect(PostgresDriver) -> Result[@runtime.Db, @runtime.DbError]
+
+pub fn postgres_disconnect(PostgresDriver, @runtime.Db) -> Result[Unit, @runtime.DbError]
+
+pub fn postgres_execute(PostgresDriver, @runtime.Db, String, Array[@runtime.DbValue]) -> Result[Int, @runtime.DbError]
+
+pub fn postgres_query(PostgresDriver, @runtime.Db, String, Array[@runtime.DbValue]) -> Result[Array[@runtime.DbValue], @runtime.DbError]
+
+pub fn sqlite_connect(SQLiteDriver) -> Result[@runtime.Db, @runtime.DbError]
+
+pub fn sqlite_disconnect(SQLiteDriver, @runtime.Db) -> Result[Unit, @runtime.DbError]
+
+pub fn sqlite_execute(SQLiteDriver, @runtime.Db, String, Array[@runtime.DbValue]) -> Result[Int, @runtime.DbError]
+
+pub fn sqlite_query(SQLiteDriver, @runtime.Db, String, Array[@runtime.DbValue]) -> Result[Array[@runtime.DbValue], @runtime.DbError]
+
+// Errors
+
+// Types and methods
+pub struct PostgresDriver {
+  url : String
+  host : String
+  port : Int
+  database : String
+  username : String
+  password : String
+}
+
+pub struct SQLiteDriver {
+  url : String
+}
+
+// Type aliases
+
+// Traits
+

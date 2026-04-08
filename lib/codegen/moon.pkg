@@ -1,0 +1,7 @@
+import {
+  "wflixu/Orion/lib/parser",
+}
+
+options(
+  "is-main": false,
+)
