@@ -66,3 +66,16 @@ test "generate_from_dir" {
     Err(_) => println("generate_from_dir failed")
   }
 }
+
+///|
+test "generate_from_sql" {
+  let sql = "-- name: getUserById\n-- description: Get user\n-- result: single\nSELECT id, name FROM users WHERE id = ?;"
+  let result = @cli.generate_from_sql(sql, "User")
+  match result {
+    Ok(code) => {
+      assert_eq(code.contains("Auto-generated"), true)
+      assert_eq(code.contains("struct User"), true)
+    }
+    Err(e) => println("generate_from_sql failed: " + e)
+  }
+}
