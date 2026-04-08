@@ -144,13 +144,19 @@ fn gen_params(count : Int) -> String {
 ///|
 /// 将驼峰命名转换为蛇形命名 - 简化版本
 pub fn to_snake_case(name : String) -> String {
-  // 简单处理：只处理 getUserById 这种模式
+  // 简单处理：只处理常见模式
   if name == "getUserById" {
     "get_user_by_id"
   } else if name == "User" {
     "user"
   } else if name == "createUser" {
     "create_user"
+  } else if name == "listUsers" {
+    "list_users"
+  } else if name == "updateUser" {
+    "update_user"
+  } else if name == "deleteUser" {
+    "delete_user"
   } else {
     name
   }
