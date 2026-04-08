@@ -48,10 +48,10 @@ test "rollback transaction" {
 ///|
 test "with_transaction helper" {
   let config = make_db_config("sqlite://test.db", 1)
-  let db = connect(config)
+  let _db = connect(config)
   // Note: Blackbox test can't define closure with package types
   // Just test that with_transaction exists and compiles
-  let _ = with_transaction
+  let _f = with_transaction
   println("with_transaction is available")
 }
 
