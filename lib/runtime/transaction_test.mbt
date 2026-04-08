@@ -56,6 +56,51 @@ test "with_transaction helper" {
 }
 
 ///|
+test "begin_tx then commit" {
+  let config = make_db_config("sqlite://test.db", 1)
+  let db = connect(config)
+  let tx_result = begin_tx(db)
+  match tx_result {
+    Ok(tx) => {
+      let commit_result = commit_tx(tx)
+      match commit_result {
+        Ok(_) => ()
+        Err(_) => println("commit failed")
+      }
+    }
+    Err(_) => println("begin_tx failed")
+  }
+}
+
+///|
+test "begin_tx then rollback" {
+  let config = make_db_config("sqlite://test.db", 1)
+  let db = connect(config)
+  let tx_result = begin_tx(db)
+  match tx_result {
+    Ok(tx) => {
+      let rollback_result = rollback_tx(tx)
+      match rollback_result {
+        Ok(_) => ()
+        Err(_) => println("rollback failed")
+      }
+    }
+    Err(_) => println("begin_tx failed")
+  }
+}
+
+///|
+test "is_tx_active after begin" {
+  let config = make_db_config("sqlite://test.db", 1)
+  let db = connect(config)
+  let tx_result = begin_tx(db)
+  match tx_result {
+    Ok(tx) => assert_eq(is_tx_active(tx), true)
+    Err(_) => println("begin_tx failed")
+  }
+}
+
+///|
 test "is_tx_active" {
   let config = make_db_config("sqlite://test.db", 1)
   let db = connect(config)

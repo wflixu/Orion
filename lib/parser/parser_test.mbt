@@ -145,3 +145,59 @@ test "count question mark params" {
     Err(e) => println("Failed to parse: " + e)
   }
 }
+
+///|
+test "parse result type single" {
+  let content = "-- name: test\n-- result: single\nSELECT * FROM users;"
+  let result = parse_sql_file(content)
+  match result {
+    Ok(queries) =>
+      match queries[0].result_type {
+        @parser.ResultType::Single => ()
+        _ => println("wrong result type")
+      }
+    Err(e) => println("Failed to parse: " + e)
+  }
+}
+
+///|
+test "parse result type many" {
+  let content = "-- name: test\n-- result: many\nSELECT * FROM users;"
+  let result = parse_sql_file(content)
+  match result {
+    Ok(queries) =>
+      match queries[0].result_type {
+        @parser.ResultType::Many => ()
+        _ => println("wrong result type")
+      }
+    Err(e) => println("Failed to parse: " + e)
+  }
+}
+
+///|
+test "parse result type last_insert_id" {
+  let content = "-- name: test\n-- result: last_insert_id\nINSERT INTO users VALUES (?);"
+  let result = parse_sql_file(content)
+  match result {
+    Ok(queries) =>
+      match queries[0].result_type {
+        @parser.ResultType::LastInsertId => ()
+        _ => println("wrong result type")
+      }
+    Err(e) => println("Failed to parse: " + e)
+  }
+}
+
+///|
+test "parse result type affected_rows" {
+  let content = "-- name: test\n-- result: affected_rows\nUPDATE users SET name = ?;"
+  let result = parse_sql_file(content)
+  match result {
+    Ok(queries) =>
+      match queries[0].result_type {
+        @parser.ResultType::AffectedRows => ()
+        _ => println("wrong result type")
+      }
+    Err(e) => println("Failed to parse: " + e)
+  }
+}

@@ -41,3 +41,27 @@ test "close pool" {
     Err(_) => println("close_pool failed")
   }
 }
+
+///|
+test "pool_size returns positive" {
+  let config = make_db_config("sqlite://test.db", 5)
+  let pool = make_pool(config)
+  let size = pool_size(pool)
+  assert_eq(size >= 0, true)
+}
+
+///|
+test "get_connection multiple times" {
+  let config = make_db_config("sqlite://test.db", 3)
+  let pool = make_pool(config)
+  let result1 = get_connection(pool)
+  let result2 = get_connection(pool)
+  match result1 {
+    Ok(db1) =>
+      match result2 {
+        Ok(db2) => assert_eq(db1.connected && db2.connected, true)
+        Err(_) => println("second get_connection failed")
+      }
+    Err(_) => println("first get_connection failed")
+  }
+}

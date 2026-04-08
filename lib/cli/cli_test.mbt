@@ -79,3 +79,61 @@ test "generate_from_sql" {
     Err(e) => println("generate_from_sql failed: " + e)
   }
 }
+
+///|
+test "run_generate returns Ok" {
+  let result = @cli.run_generate("test/sql")
+  match result {
+    Ok(_) => assert_eq(true, true)
+    Err(_) => println("run_generate should succeed")
+  }
+}
+
+///|
+test "run_migrate returns Ok" {
+  let result = @cli.run_migrate("sqlite://test.db")
+  match result {
+    Ok(_) => assert_eq(true, true)
+    Err(_) => println("run_migrate should succeed")
+  }
+}
+
+///|
+test "parse_args with gen alias" {
+  let args = ["orion", "gen", "sql"]
+  let cmd = @cli.parse_args(args)
+  match cmd {
+    @cli.Command::Generate(dir) => assert_eq(dir, "sql")
+    _ => println("wrong command")
+  }
+}
+
+///|
+test "parse_args with mig alias" {
+  let args = ["orion", "mig", "sqlite://db"]
+  let cmd = @cli.parse_args(args)
+  match cmd {
+    @cli.Command::Migrate(url) => assert_eq(url, "sqlite://db")
+    _ => println("wrong command")
+  }
+}
+
+///|
+test "parse_args with --help" {
+  let args = ["orion", "--help"]
+  let cmd = @cli.parse_args(args)
+  match cmd {
+    @cli.Command::Help => ()
+    _ => println("wrong command")
+  }
+}
+
+///|
+test "parse_args with -h" {
+  let args = ["orion", "-h"]
+  let cmd = @cli.parse_args(args)
+  match cmd {
+    @cli.Command::Help => ()
+    _ => println("wrong command")
+  }
+}

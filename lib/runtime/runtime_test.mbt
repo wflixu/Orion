@@ -87,3 +87,31 @@ test "execute on disconnected db" {
     Err(_) => ()
   }
 }
+
+///|
+test "DbValue helpers" {
+  let int_val = @runtime.make_db_value_int(100)
+  let str_val = @runtime.make_db_value_string("test")
+  let bool_val = @runtime.make_db_value_bool(false)
+  let null_val = @runtime.make_db_value_null()
+
+  match int_val {
+    @runtime.DbValue::Int(n) => assert_eq(n, 100)
+    _ => println("wrong type")
+  }
+
+  match str_val {
+    @runtime.DbValue::String(s) => assert_eq(s, "test")
+    _ => println("wrong type")
+  }
+
+  match bool_val {
+    @runtime.DbValue::Bool(b) => assert_eq(b, false)
+    _ => println("wrong type")
+  }
+
+  match null_val {
+    @runtime.DbValue::Null => ()
+    _ => println("wrong type")
+  }
+}
