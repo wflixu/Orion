@@ -26,7 +26,7 @@ pub fn sqlite_connect(
 ///|
 /// SQLite 驱动断开连接
 pub fn sqlite_disconnect(
-  driver : SQLiteDriver,
+  _driver : SQLiteDriver,
   db : @runtime.Db,
 ) -> Result[Unit, @runtime.DbError] {
   @runtime.close(db)
@@ -35,7 +35,7 @@ pub fn sqlite_disconnect(
 ///|
 /// SQLite 驱动查询
 pub fn sqlite_query(
-  driver : SQLiteDriver,
+  _driver : SQLiteDriver,
   db : @runtime.Db,
   sql : String,
   params : Array[@runtime.DbValue],
@@ -47,7 +47,7 @@ pub fn sqlite_query(
 ///|
 /// SQLite 驱动执行
 pub fn sqlite_execute(
-  driver : SQLiteDriver,
+  _driver : SQLiteDriver,
   db : @runtime.Db,
   sql : String,
   params : Array[@runtime.DbValue],
