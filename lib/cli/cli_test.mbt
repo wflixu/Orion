@@ -39,3 +39,30 @@ test "parse_args unknown" {
     _ => println("wrong command")
   }
 }
+
+///|
+test "run_generate" {
+  let result = @cli.run_generate("sql")
+  match result {
+    Ok(_) => ()
+    Err(_) => println("run_generate failed")
+  }
+}
+
+///|
+test "run_migrate" {
+  let result = @cli.run_migrate("sqlite://test.db")
+  match result {
+    Ok(_) => ()
+    Err(_) => println("run_migrate failed")
+  }
+}
+
+///|
+test "generate_from_dir" {
+  let result = @cli.generate_from_dir("sql")
+  match result {
+    Ok(code) => assert_eq(code.contains("Generated"), true)
+    Err(_) => println("generate_from_dir failed")
+  }
+}

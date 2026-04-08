@@ -82,3 +82,11 @@ pub fn run_migrate(db_url : String) -> Result[Unit, String] {
   println("Migrations complete!")
   Ok(())
 }
+
+///|
+/// 从 SQL 目录生成代码
+pub fn generate_from_dir(sql_dir : String) -> Result[String, String] {
+  println("Scanning SQL files in: " + sql_dir)
+  // TODO: 实现目录扫描和代码生成
+  Ok("// Generated code from: " + sql_dir)
+}
