@@ -2,6 +2,87 @@
 /// 从 QueryMeta 生成 MoonBit 代码
 
 ///|
+/// SQL 类型到 MoonBit 类型的映射
+pub fn sql_type_to_moonbit(sql_type : String) -> String {
+  let lower = sql_type.to_lower()
+  if lower.contains("int") || lower.contains("integer") {
+    "Int"
+  } else if lower.contains("bool") || lower.contains("tinyint") {
+    "Bool"
+  } else if lower.contains("text") ||
+    lower.contains("char") ||
+    lower.contains("varchar") {
+    "String"
+  } else {
+    "String" // 默认类型
+  }
+}
+
+///|
+/// 从 SQL SELECT 语句推断字段
+pub fn infer_fields_from_sql(sql : String) -> Array[(String, String)] {
+  // 提取 SELECT 和 FROM 之间的部分
+  let upper_sql = sql.to_upper()
+  let select_idx = upper_sql.find("SELECT")
+  let from_idx = upper_sql.find("FROM")
+
+  match (select_idx, from_idx) {
+    (Some(sel), Some(frm)) => {
+      let columns_part_start = sel + 6 // "SELECT".length()
+      if columns_part_start >= frm {
+        []
+      } else {
+        let columns_part = sql[columns_part_start:frm].trim().to_string()
+        parse_columns(columns_part)
+      }
+    }
+    _ => []
+  }
+}
+
+///|
+/// 解析列定义
+fn parse_columns(columns_str : String) -> Array[(String, String)] {
+  if columns_str.trim() == "*" {
+    [] // 通配符，无法推断
+  } else {
+    let fields : Array[(String, String)] = []
+    let parts = columns_str.split(",")
+    for part in parts {
+      let trimmed = part.trim().to_string()
+      // 处理 "column AS alias" 或 "table.column"
+      let field_name = extract_field_name(trimmed)
+      if field_name != "" {
+        fields.push((field_name, "String")) // 默认类型，后续可从 schema 推断
+      }
+    }
+    fields
+  }
+}
+
+///|
+/// 从列表达式提取字段名
+fn extract_field_name(expr : String) -> String {
+  // 处理 "AS alias"
+  let upper = expr.to_upper()
+  let as_idx = upper.find(" AS ")
+  match as_idx {
+    Some(idx) => {
+      let alias_part = expr[idx + 4:].trim().to_string()
+      alias_part
+    }
+    None => {
+      // 处理 "table.column" 或 "column"
+      let dot_idx = expr.find(".")
+      match dot_idx {
+        Some(idx) => expr[idx + 1:].trim().to_string()
+        None => expr.trim().to_string()
+      }
+    }
+  }
+}
+
+///|
 /// 生成 Struct 定义
 pub fn gen_struct(name : String, fields : Array[(String, String)]) -> String {
   let mut code = "struct " + name + " {\n"
@@ -10,6 +91,13 @@ pub fn gen_struct(name : String, fields : Array[(String, String)]) -> String {
   }
   code = code + "}\n\n"
   code
+}
+
+///|
+/// 从 SQL 生成结构体定义
+pub fn gen_struct_from_sql(name : String, sql : String) -> String {
+  let fields = infer_fields_from_sql(sql)
+  gen_struct(name, fields)
 }
 
 ///|
