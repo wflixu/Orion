@@ -7,7 +7,16 @@
       "WebFetch(domain:mooncakes.io)",
       "mcp__chrome-devtools__new_page",
       "mcp__chrome-devtools__take_snapshot",
-      "mcp__chrome-devtools__close_page"
+      "mcp__chrome-devtools__close_page",
+      "Bash(moon test:*)",
+      "Bash(moon fmt:*)",
+      "Bash(moon doc:*)",
+      "WebFetch(domain:docs.moonbitlang.com)",
+      "WebFetch(domain:tour.moonbitlang.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(xargs cat:*)",
+      "Bash(moon run:*)",
+      "Bash(moon check:*)"
     ]
   }
 }

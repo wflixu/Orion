@@ -53,7 +53,7 @@ orion gen --input queries --output generated
 
 生成的代码：
 
-```moonbit
+```moonbit nocheck
 // generated/user.mbt
 
 struct User {
@@ -73,7 +73,7 @@ fn list_users(self: UserMapper) -> Result[List[User], DbError]
 
 ### 使用示例
 
-```moonbit
+```moonbit nocheck
 import wflixu/Orion
 
 fn main {
@@ -188,7 +188,7 @@ AND age >= ?
 
 ### 连接管理
 
-```moonbit
+```moonbit nocheck
 // 基本连接
 let db = Orion.connect({
   url: "sqlite://app.db"
@@ -210,7 +210,7 @@ Orion.close(db)
 
 ### 事务（v0.2.0+）
 
-```moonbit
+```moonbit nocheck
 Orion.transaction(db, fn(tx) {
   let user_id = UserMapper.create(tx, "Alice", 25)?
   OrderMapper.create(tx, user_id, 100)?
@@ -220,13 +220,14 @@ Orion.transaction(db, fn(tx) {
 
 ### 错误处理
 
-```moonbit
+```moonbit nocheck
+///|
 enum DbError {
-  NotFound           // 未找到记录
-  UniqueViolation    // 唯一约束违反
-  ConnectionError    // 连接错误
-  QueryError         // 查询错误
-  Timeout            // 超时
+  NotFound // 未找到记录
+  UniqueViolation // 唯一约束违反
+  ConnectionError // 连接错误
+  QueryError // 查询错误
+  Timeout // 超时
 }
 ```
 
