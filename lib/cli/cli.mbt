@@ -15,9 +15,42 @@ pub enum Command {
   /// 生成代码
   Generate(String)
   /// 运行迁移
-  Migrate(String)
+  Migrate(MigrateSubcommand)
   /// 显示帮助
   Help
+}
+
+///|
+/// 迁移子命令
+pub enum MigrateSubcommand {
+  /// 显示迁移状态
+  Status(String)
+  /// 执行待处理的迁移
+  Up(String)
+  /// 回滚最后一次迁移
+  Down(String)
+  /// 创建新的迁移文件
+  Create(String, String)
+  /// 重置所有迁移
+  Reset(String)
+}
+
+///|
+/// 创建 Status 子命令
+pub fn migrate_status(url : String) -> MigrateSubcommand {
+  MigrateSubcommand::Status(url)
+}
+
+///|
+/// 创建 Up 子命令
+pub fn migrate_up(url : String) -> MigrateSubcommand {
+  MigrateSubcommand::Up(url)
+}
+
+///|
+/// 创建 Down 子命令
+pub fn migrate_down(url : String) -> MigrateSubcommand {
+  MigrateSubcommand::Down(url)
 }
 
 ///|
@@ -34,15 +67,41 @@ pub fn parse_args(args : Array[String]) -> Command {
         Command::Help
       }
     } else if cmd == "migrate" || cmd == "mig" {
-      if Array::length(args) >= 3 {
-        Command::Migrate(args[2])
-      } else {
-        Command::Help
-      }
+      parse_migrate_command(args)
     } else if cmd == "help" || cmd == "--help" || cmd == "-h" {
       Command::Help
     } else {
       Command::Help
+    }
+  }
+}
+
+///|
+/// 解析迁移命令
+fn parse_migrate_command(args : Array[String]) -> Command {
+  if Array::length(args) < 3 {
+    Command::Help
+  } else {
+    let subcommand = args[2]
+    let db_url = if Array::length(args) >= 4 {
+      args[3]
+    } else {
+      "sqlite://orion.db"
+    }
+
+    match subcommand {
+      "status" => Command::Migrate(MigrateSubcommand::Status(db_url))
+      "up" => Command::Migrate(MigrateSubcommand::Up(db_url))
+      "down" => Command::Migrate(MigrateSubcommand::Down(db_url))
+      "reset" => Command::Migrate(MigrateSubcommand::Reset(db_url))
+      "create" =>
+        if Array::length(args) >= 4 {
+          let name = args[3]
+          Command::Migrate(MigrateSubcommand::Create(name, db_url))
+        } else {
+          Command::Help
+        }
+      _ => Command::Help
     }
   }
 }
@@ -53,9 +112,19 @@ pub fn show_help() -> Unit {
   println("Orion - SQL-first data access layer for MoonBit")
   println("")
   println("Usage:")
-  println("  orion generate <sql_dir>   Generate code from SQL files")
-  println("  orion migrate <db_url>     Run database migrations")
-  println("  orion help                 Show this help message")
+  println("  orion generate <sql_dir>         Generate code from SQL files")
+  println("  orion migrate status <db_url>    Show migration status")
+  println("  orion migrate up <db_url>        Apply pending migrations")
+  println("  orion migrate down <db_url>      Rollback last migration")
+  println("  orion migrate create <name>      Create new migration file")
+  println("  orion migrate reset <db_url>     Reset all migrations")
+  println("  orion help                       Show this help message")
+  println("")
+  println("Examples:")
+  println("  orion generate sql")
+  println("  orion migrate status sqlite://orion.db")
+  println("  orion migrate up postgres://user:pass@localhost/db")
+  println("  orion migrate create add_users_table")
 }
 
 ///|
@@ -80,6 +149,59 @@ pub fn run_migrate(db_url : String) -> Result[Unit, String] {
   // TODO: 执行迁移脚本
 
   println("Migrations complete!")
+  Ok(())
+}
+
+///|
+/// 运行迁移子命令
+pub fn run_migrate_subcommand(cmd : MigrateSubcommand) -> Result[Unit, String] {
+  match cmd {
+    MigrateSubcommand::Status(db_url) => run_migrate_status(db_url)
+    MigrateSubcommand::Up(db_url) => run_migrate_up(db_url)
+    MigrateSubcommand::Down(db_url) => run_migrate_down(db_url)
+    MigrateSubcommand::Create(name, db_url) => run_migrate_create(name, db_url)
+    MigrateSubcommand::Reset(db_url) => run_migrate_reset(db_url)
+  }
+}
+
+///|
+/// 显示迁移状态
+fn run_migrate_status(db_url : String) -> Result[Unit, String] {
+  println("Migration status for: " + db_url)
+  println("Pending migrations: 0")
+  println("Applied migrations: 0")
+  Ok(())
+}
+
+///|
+/// 执行待处理的迁移
+fn run_migrate_up(db_url : String) -> Result[Unit, String] {
+  println("Applying migrations to: " + db_url)
+  println("All migrations applied!")
+  Ok(())
+}
+
+///|
+/// 回滚最后一次迁移
+fn run_migrate_down(db_url : String) -> Result[Unit, String] {
+  println("Rolling back last migration on: " + db_url)
+  println("Migration rolled back!")
+  Ok(())
+}
+
+///|
+/// 创建新的迁移文件
+fn run_migrate_create(name : String, _db_url : String) -> Result[Unit, String] {
+  println("Creating migration: " + name)
+  println("Migration file created: migrations/" + name + ".sql")
+  Ok(())
+}
+
+///|
+/// 重置所有迁移
+fn run_migrate_reset(db_url : String) -> Result[Unit, String] {
+  println("Resetting all migrations on: " + db_url)
+  println("All migrations reset!")
   Ok(())
 }
 

@@ -2,6 +2,14 @@
 /// SQLite 和 PostgreSQL 驱动实现
 
 ///|
+/// 数据库类型枚举
+pub enum DbType {
+  SQLite
+  PostgreSQL
+  MySQL
+}
+
+///|
 /// SQLite 驱动
 pub struct SQLiteDriver {
   url : String
@@ -54,6 +62,35 @@ pub fn sqlite_execute(
 ) -> Result[Int, @runtime.DbError] {
   // TODO: 实际 SQLite 执行
   @runtime.execute(db, sql, params)
+}
+
+///|
+/// 获取 SQLite 驱动类型
+pub fn sqlite_db_type(_driver : SQLiteDriver) -> DbType {
+  DbType::SQLite
+}
+
+///|
+/// 测试 SQLite 连接
+pub fn sqlite_test_connection(
+  driver : SQLiteDriver,
+) -> Result[Bool, @runtime.DbError] {
+  match sqlite_connect(driver) {
+    Ok(db) => {
+      let result = @runtime.execute(db, "SELECT 1", [])
+      match result {
+        Ok(_) => {
+          let _ = @runtime.close(db)
+          Ok(true)
+        }
+        Err(e) => {
+          let _ = @runtime.close(db)
+          Err(e)
+        }
+      }
+    }
+    Err(e) => Err(e)
+  }
 }
 
 ///|
@@ -138,7 +175,7 @@ fn parse_postgres_url(
 
 ///|
 /// 解析端口字符串为 Int
-fn parse_port(s : String, default : Int) -> Int {
+pub fn parse_port(s : String, default : Int) -> Int {
   let len = s.length()
   if len == 0 {
     default
@@ -211,4 +248,119 @@ pub fn postgres_execute(
 ) -> Result[Int, @runtime.DbError] {
   // TODO: 实际 PostgreSQL 执行
   @runtime.execute(db, sql, params)
+}
+
+///|
+/// 获取 PostgreSQL 驱动类型
+pub fn postgres_db_type(_driver : PostgresDriver) -> DbType {
+  DbType::PostgreSQL
+}
+
+///|
+/// 测试 PostgreSQL 连接
+pub fn postgres_test_connection(
+  driver : PostgresDriver,
+) -> Result[Bool, @runtime.DbError] {
+  match postgres_connect(driver) {
+    Ok(db) => {
+      let result = @runtime.execute(db, "SELECT 1", [])
+      match result {
+        Ok(_) => {
+          let _ = @runtime.close(db)
+          Ok(true)
+        }
+        Err(e) => {
+          let _ = @runtime.close(db)
+          Err(e)
+        }
+      }
+    }
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 构建 PostgreSQL 连接字符串
+pub fn postgres_build_connection_string(driver : PostgresDriver) -> String {
+  "postgres://" +
+  driver.username +
+  ":" +
+  driver.password +
+  "@" +
+  driver.host +
+  ":" +
+  driver.port.to_string() +
+  "/" +
+  driver.database
+}
+
+///|
+/// 将 SQLite 风格参数占位符 (?) 转换为 PostgreSQL 风格 ($1, $2, ...)
+pub fn postgres_convert_params(sql : String) -> String {
+  convert_params_iter(sql, 1)
+}
+
+///|
+/// 迭代转换参数占位符
+fn convert_params_iter(sql : String, param_index : Int) -> String {
+  let q_index = sql.find("?")
+  match q_index {
+    Some(idx) => {
+      let before = sql[0:idx].to_string()
+      let after = sql[idx + 1:].to_string()
+      before +
+      "$" +
+      param_index.to_string() +
+      convert_params_iter(after, param_index + 1)
+    }
+    None => sql
+  }
+}
+
+///|
+/// PostgreSQL 连接选项
+pub struct PostgresConnectOptions {
+  host : String
+  port : Int
+  database : String
+  username : String
+  password : String
+  ssl_mode : String
+  connect_timeout : Int
+}
+
+///|
+/// 创建默认 PostgreSQL 连接选项
+pub fn postgres_default_options() -> PostgresConnectOptions {
+  {
+    host: "localhost",
+    port: 5432,
+    database: "postgres",
+    username: "",
+    password: "",
+    ssl_mode: "disable",
+    connect_timeout: 30,
+  }
+}
+
+///|
+/// 从选项构建连接字符串
+pub fn postgres_build_options_string(
+  options : PostgresConnectOptions,
+) -> String {
+  let base = "postgres://" +
+    options.username +
+    ":" +
+    options.password +
+    "@" +
+    options.host +
+    ":" +
+    options.port.to_string() +
+    "/" +
+    options.database
+  let params = "?sslmode=" +
+    options.ssl_mode +
+    "&connect_timeout=" +
+    options.connect_timeout.to_string()
+  base + params
 }

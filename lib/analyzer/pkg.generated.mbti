@@ -1,0 +1,73 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wflixu/Orion/lib/analyzer"
+
+// Values
+pub fn add_table(SchemaInfo, TableInfo) -> SchemaInfo
+
+pub fn db_type_boolean() -> DatabaseType
+
+pub fn db_type_integer() -> DatabaseType
+
+pub fn db_type_real() -> DatabaseType
+
+pub fn db_type_text() -> DatabaseType
+
+pub fn db_type_to_mb_type(DatabaseType) -> String
+
+pub fn find_column(TableInfo, String) -> ColumnInfo?
+
+pub fn find_table(SchemaInfo, String) -> TableInfo?
+
+pub fn gen_struct_fields(Array[(String, String)], String) -> String
+
+pub fn guess_column_type(SchemaInfo, String) -> String
+
+pub fn infer_column_type(ColumnInfo) -> String
+
+pub fn infer_select_type(SchemaInfo, String) -> Array[(String, String)]
+
+pub fn make_column(String, DatabaseType, Bool, Bool) -> ColumnInfo
+
+pub fn make_empty_schema() -> SchemaInfo
+
+pub fn make_table(String, Array[ColumnInfo]) -> TableInfo
+
+pub fn parse_select_columns(String) -> Array[String]
+
+pub fn split_columns(String) -> Array[String]
+
+pub fn trim(String) -> String
+
+// Errors
+
+// Types and methods
+pub struct ColumnInfo {
+  name : String
+  db_type : DatabaseType
+  nullable : Bool
+  primary_key : Bool
+}
+
+pub enum DatabaseType {
+  Text
+  Integer
+  Real
+  Boolean
+  Blob
+  Null
+  Unknown
+}
+
+pub struct SchemaInfo {
+  tables : Array[TableInfo]
+}
+
+pub struct TableInfo {
+  name : String
+  columns : Array[ColumnInfo]
+}
+
+// Type aliases
+
+// Traits
+

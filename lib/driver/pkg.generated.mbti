@@ -10,7 +10,19 @@ pub fn make_postgres_driver(String) -> PostgresDriver
 
 pub fn make_sqlite_driver(String) -> SQLiteDriver
 
+pub fn parse_port(String, Int) -> Int
+
+pub fn postgres_build_connection_string(PostgresDriver) -> String
+
+pub fn postgres_build_options_string(PostgresConnectOptions) -> String
+
 pub fn postgres_connect(PostgresDriver) -> Result[@runtime.Db, @runtime.DbError]
+
+pub fn postgres_convert_params(String) -> String
+
+pub fn postgres_db_type(PostgresDriver) -> DbType
+
+pub fn postgres_default_options() -> PostgresConnectOptions
 
 pub fn postgres_disconnect(PostgresDriver, @runtime.Db) -> Result[Unit, @runtime.DbError]
 
@@ -18,7 +30,11 @@ pub fn postgres_execute(PostgresDriver, @runtime.Db, String, Array[@runtime.DbVa
 
 pub fn postgres_query(PostgresDriver, @runtime.Db, String, Array[@runtime.DbValue]) -> Result[Array[@runtime.DbValue], @runtime.DbError]
 
+pub fn postgres_test_connection(PostgresDriver) -> Result[Bool, @runtime.DbError]
+
 pub fn sqlite_connect(SQLiteDriver) -> Result[@runtime.Db, @runtime.DbError]
+
+pub fn sqlite_db_type(SQLiteDriver) -> DbType
 
 pub fn sqlite_disconnect(SQLiteDriver, @runtime.Db) -> Result[Unit, @runtime.DbError]
 
@@ -26,9 +42,27 @@ pub fn sqlite_execute(SQLiteDriver, @runtime.Db, String, Array[@runtime.DbValue]
 
 pub fn sqlite_query(SQLiteDriver, @runtime.Db, String, Array[@runtime.DbValue]) -> Result[Array[@runtime.DbValue], @runtime.DbError]
 
+pub fn sqlite_test_connection(SQLiteDriver) -> Result[Bool, @runtime.DbError]
+
 // Errors
 
 // Types and methods
+pub enum DbType {
+  SQLite
+  PostgreSQL
+  MySQL
+}
+
+pub struct PostgresConnectOptions {
+  host : String
+  port : Int
+  database : String
+  username : String
+  password : String
+  ssl_mode : String
+  connect_timeout : Int
+}
+
 pub struct PostgresDriver {
   url : String
   host : String

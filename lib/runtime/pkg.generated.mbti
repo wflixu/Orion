@@ -2,21 +2,103 @@
 package "wflixu/Orion/lib/runtime"
 
 // Values
+pub fn active_count(Pool) -> Int
+
+pub fn apply_migration(Db, Migration) -> Result[Migration, DbError]
+
+pub fn begin_nested_tx(Tx) -> Result[Tx, DbError]
+
 pub fn begin_tx(Db) -> Result[Tx, DbError]
+
+pub fn build(SqlBuilder) -> String
+
+pub fn clear(StmtCache) -> StmtCache
 
 pub fn close(Db) -> Result[Unit, DbError]
 
 pub fn close_pool(Pool) -> Result[Unit, DbError]
 
-pub fn commit_tx(Tx) -> Result[Unit, DbError]
+pub fn commit_tx(Tx) -> Result[Tx, DbError]
+
+pub fn compare_versions(String, String) -> Int
 
 pub fn connect(DbConfig) -> Db
 
+pub fn connection_error(String) -> DbError
+
+pub fn debug(Logger, String) -> Unit
+
+pub fn disable(Logger) -> Logger
+
+pub fn enable(Logger) -> Logger
+
+pub fn equal(String, String) -> SqlCondition
+
+pub fn error_message(DbError) -> String
+
 pub fn execute(Db, String, Array[DbValue]) -> Result[Int, DbError]
+
+pub fn foreign_key_violation(String) -> DbError
+
+pub fn get(StmtCache, String) -> Result[(PreparedStmt, StmtCache), DbError]
+
+pub fn get_applied_migrations(Db) -> Result[Array[String], DbError]
 
 pub fn get_connection(Pool) -> Result[(Db, Pool), DbError]
 
+pub fn get_current_timestamp() -> String
+
+pub fn get_depth(Tx) -> Int
+
+pub fn get_level(Logger) -> LogLevel
+
+pub fn get_migration_error(MigrationError) -> String
+
+pub fn get_or_create(StmtCache, String) -> (PreparedStmt, StmtCache)
+
+pub fn get_parent(Tx) -> Tx?
+
+pub fn get_status(Migration) -> MigrationStatus
+
+pub fn get_version(Migration) -> String
+
+pub fn greater_than(String, String) -> SqlCondition
+
+pub fn health_check(Pool) -> Pool
+
+pub fn hit_rate(StmtCache) -> Double
+
+pub fn in_list(String, Array[String]) -> SqlCondition
+
+pub fn info(Logger, String) -> Unit
+
+pub fn init_migrations(Db, String) -> Result[Unit, DbError]
+
+pub fn is_applied(Migration) -> Bool
+
+pub fn is_connection_valid(Db) -> Bool
+
+pub fn is_enabled(Logger) -> Bool
+
+pub fn is_not_null(String) -> SqlCondition
+
+pub fn is_null(String) -> SqlCondition
+
+pub fn is_prepared(PreparedStmt) -> Bool
+
+pub fn is_retryable(DbError) -> Bool
+
 pub fn is_tx_active(Tx) -> Bool
+
+pub fn less_than(String, String) -> SqlCondition
+
+pub fn like(String, String) -> SqlCondition
+
+pub fn limit(SqlBuilder, Int) -> SqlBuilder
+
+pub fn log_error(Logger, String) -> Unit
+
+pub fn make_config(LogLevel, Bool) -> LoggerConfig
 
 pub fn make_db_config(String, Int) -> DbConfig
 
@@ -28,15 +110,89 @@ pub fn make_db_value_null() -> DbValue
 
 pub fn make_db_value_string(String) -> DbValue
 
+pub fn make_default_config() -> LoggerConfig
+
+pub fn make_default_logger() -> Logger
+
+pub fn make_default_migration_config() -> MigrationConfig
+
+pub fn make_logger(LoggerConfig) -> Logger
+
+pub fn make_migration(String, String, String, String) -> Migration
+
+pub fn make_migration_config(String, String) -> MigrationConfig
+
+pub fn make_order(String, Bool) -> SqlOrder
+
 pub fn make_pool(DbConfig) -> Pool
+
+pub fn make_prepared_stmt(String) -> PreparedStmt
+
+pub fn make_sql_builder(String) -> SqlBuilder
+
+pub fn make_stmt_cache(Int) -> StmtCache
+
+pub fn make_stmt_id(String) -> StmtId
+
+pub fn mark_prepared(PreparedStmt) -> PreparedStmt
+
+pub fn migration_already_applied(String) -> MigrationError
+
+pub fn migration_not_found(String) -> MigrationError
+
+pub fn migration_status_applied() -> MigrationStatus
+
+pub fn migration_status_failed() -> MigrationStatus
+
+pub fn migration_status_pending() -> MigrationStatus
+
+pub fn not_equal(String, String) -> SqlCondition
+
+pub fn offset(SqlBuilder, Int) -> SqlBuilder
+
+pub fn order_by(SqlBuilder, SqlOrder) -> SqlBuilder
 
 pub fn pool_size(Pool) -> Int
 
+pub fn put(StmtCache, PreparedStmt) -> StmtCache
+
 pub fn query(Db, String, Array[DbValue]) -> Result[Array[DbValue], DbError]
+
+pub fn query_error(String) -> DbError
+
+pub fn raw_sql(String) -> SqlCondition
 
 pub fn return_connection(Pool, Db) -> Pool
 
-pub fn rollback_tx(Tx) -> Result[Unit, DbError]
+pub fn rollback_migration(Db, Migration) -> Result[Migration, DbError]
+
+pub fn rollback_tx(Tx) -> Result[Tx, DbError]
+
+pub fn set_applied_at(Migration, String) -> Migration
+
+pub fn set_level(Logger, LogLevel) -> Logger
+
+pub fn set_status(Migration, MigrationStatus) -> Migration
+
+pub fn size(StmtCache) -> Int
+
+pub fn sql_and(Array[SqlCondition]) -> SqlCondition
+
+pub fn sql_not(SqlCondition) -> SqlCondition
+
+pub fn sql_or(Array[SqlCondition]) -> SqlCondition
+
+pub fn timeout_error(String) -> DbError
+
+pub fn transaction_error(String) -> DbError
+
+pub fn unique_violation(String) -> DbError
+
+pub fn warn(Logger, String) -> Unit
+
+pub fn where_clause(SqlBuilder, SqlCondition) -> SqlBuilder
+
+pub fn[T] with_nested_transaction(Tx, (Tx) -> Result[T, DbError]) -> Result[T, DbError]
 
 pub fn[T] with_transaction(Db, (Tx) -> Result[T, DbError]) -> Result[T, DbError]
 
@@ -55,8 +211,16 @@ pub struct DbConfig {
 
 pub enum DbError {
   ConnectionError(String)
-  QueryError(String)
   PoolExhausted
+  QueryError(String)
+  NotFound
+  UniqueViolation(String)
+  ForeignKeyViolation(String)
+  CheckViolation(String)
+  TransactionError(String)
+  Timeout(String)
+  TypeConversionError(String)
+  UnknownError(String)
 }
 
 pub enum DbValue {
@@ -66,19 +230,117 @@ pub enum DbValue {
   Bool(Bool)
 }
 
+pub enum LogLevel {
+  Debug
+  Info
+  Warn
+  Error
+}
+
+pub struct Logger {
+  config : LoggerConfig
+}
+
+pub struct LoggerConfig {
+  min_level : LogLevel
+  enabled : Bool
+}
+
+pub struct Migration {
+  version : String
+  name : String
+  up_sql : String
+  down_sql : String
+  status : MigrationStatus
+  applied_at : String?
+}
+
+pub struct MigrationConfig {
+  migrations_dir : String
+  migrations_table : String
+}
+
+pub enum MigrationDirection {
+  Up
+  Down
+}
+
+pub enum MigrationError {
+  MigrationNotFound(String)
+  MigrationAlreadyApplied(String)
+  InvalidMigrationFormat(String)
+  DatabaseError(String)
+}
+
+pub enum MigrationStatus {
+  Pending
+  Applied
+  Failed
+}
+
 pub struct Pool {
   config : DbConfig
   available : Array[Db]
   active_count : Int
 }
 
+pub struct PreparedStmt {
+  id : StmtId
+  sql : String
+  prepared : Bool
+}
+
+pub struct SqlBuilder {
+  base_query : String
+  conditions : Array[SqlCondition]
+  order_by : Array[SqlOrder]
+  limit : Int?
+  offset : Int?
+}
+
+pub enum SqlCondition {
+  Equal(String, String)
+  NotEqual(String, String)
+  GreaterThan(String, String)
+  LessThan(String, String)
+  Like(String, String)
+  In(String, Array[String])
+  IsNull(String)
+  IsNotNull(String)
+  And(Array[SqlCondition])
+  Or(Array[SqlCondition])
+  Not(SqlCondition)
+  Raw(String)
+}
+
+pub struct SqlOrder {
+  column : String
+  ascending : Bool
+}
+
+pub struct StmtCache {
+  capacity : Int
+  entries : Array[(String, PreparedStmt)]
+  hit_count : Int
+  miss_count : Int
+}
+
+pub struct StmtId {
+  sql : String
+}
+
 pub struct Tx {
   db : Db
   status : TxStatus
+  depth : Int
+  parent : Tx?
 }
 
 pub enum TxStatus {
   Active
+  Committed
+  RolledBack
+  Failed
 }
 
 // Type aliases
