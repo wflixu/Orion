@@ -86,7 +86,8 @@ pub fn error_message(err : DbError) -> String {
     DbError::PoolExhausted => "Connection pool exhausted"
     DbError::NotFound => "Record not found"
     DbError::UniqueViolation(msg) => "Unique constraint violation: " + msg
-    DbError::ForeignKeyViolation(msg) => "Foreign key constraint violation: " + msg
+    DbError::ForeignKeyViolation(msg) =>
+      "Foreign key constraint violation: " + msg
     DbError::CheckViolation(msg) => "Check constraint violation: " + msg
     DbError::TransactionError(msg) => "Transaction error: " + msg
     DbError::Timeout(msg) => "Operation timeout: " + msg

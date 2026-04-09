@@ -38,7 +38,7 @@ pub fn make_config(min_level : LogLevel, enabled : Bool) -> LoggerConfig {
 ///|
 /// 创建日志记录器
 pub fn make_logger(config : LoggerConfig) -> Logger {
-  { config: config }
+  { config, }
 }
 
 ///|

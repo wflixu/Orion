@@ -59,4 +59,3 @@ test "get_level returns current level" {
     _ => println("default should be Info")
   }
 }
-

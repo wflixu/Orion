@@ -33,7 +33,7 @@ pub fn make_stmt_cache(capacity : Int) -> StmtCache {
 ///|
 /// 生成语句 ID
 pub fn make_stmt_id(sql : String) -> StmtId {
-  { sql: sql }
+  { sql, }
 }
 
 ///|
@@ -45,7 +45,10 @@ pub fn make_prepared_stmt(sql : String) -> PreparedStmt {
 
 ///|
 /// 从缓存获取预编译语句
-pub fn get(cache : StmtCache, sql : String) -> Result[(PreparedStmt, StmtCache), DbError] {
+pub fn get(
+  cache : StmtCache,
+  sql : String,
+) -> Result[(PreparedStmt, StmtCache), DbError] {
   let mut i = 0
   while i < Array::length(cache.entries) {
     let (key, stmt) = cache.entries[i]
@@ -78,7 +81,10 @@ pub fn put(cache : StmtCache, stmt : PreparedStmt) -> StmtCache {
 
 ///|
 /// 获取或创建预编译语句
-pub fn get_or_create(cache : StmtCache, sql : String) -> (PreparedStmt, StmtCache) {
+pub fn get_or_create(
+  cache : StmtCache,
+  sql : String,
+) -> (PreparedStmt, StmtCache) {
   match get(cache, sql) {
     Ok((stmt, new_cache)) => (stmt, new_cache)
     Err(_) => {
@@ -105,12 +111,7 @@ pub fn hit_rate(cache : StmtCache) -> Double {
 ///|
 /// 清空缓存
 pub fn clear(cache : StmtCache) -> StmtCache {
-  {
-    capacity: cache.capacity,
-    entries: [],
-    hit_count: 0,
-    miss_count: 0,
-  }
+  { capacity: cache.capacity, entries: [], hit_count: 0, miss_count: 0 }
 }
 
 ///|
@@ -131,6 +132,7 @@ pub fn mark_prepared(stmt : PreparedStmt) -> PreparedStmt {
   { id: stmt.id, sql: stmt.sql, prepared: true }
 }
 
+///|
 /// 辅助函数：整数转浮点数（简化实现）
 fn double_from_int(i : Int) -> Double {
   // TODO: 使用实际的浮点转换

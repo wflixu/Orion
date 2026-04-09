@@ -2,7 +2,11 @@
 package "wflixu/Orion/lib/runtime"
 
 // Values
+pub fn active_count(Pool) -> Int
+
 pub fn begin_tx(Db) -> Result[Tx, DbError]
+
+pub fn clear(StmtCache) -> StmtCache
 
 pub fn close(Db) -> Result[Unit, DbError]
 
@@ -12,11 +16,47 @@ pub fn commit_tx(Tx) -> Result[Unit, DbError]
 
 pub fn connect(DbConfig) -> Db
 
+pub fn connection_error(String) -> DbError
+
+pub fn debug(Logger, String) -> Unit
+
+pub fn disable(Logger) -> Logger
+
+pub fn enable(Logger) -> Logger
+
+pub fn error_message(DbError) -> String
+
 pub fn execute(Db, String, Array[DbValue]) -> Result[Int, DbError]
+
+pub fn foreign_key_violation(String) -> DbError
+
+pub fn get(StmtCache, String) -> Result[(PreparedStmt, StmtCache), DbError]
 
 pub fn get_connection(Pool) -> Result[(Db, Pool), DbError]
 
+pub fn get_level(Logger) -> LogLevel
+
+pub fn get_or_create(StmtCache, String) -> (PreparedStmt, StmtCache)
+
+pub fn health_check(Pool) -> Pool
+
+pub fn hit_rate(StmtCache) -> Double
+
+pub fn info(Logger, String) -> Unit
+
+pub fn is_connection_valid(Db) -> Bool
+
+pub fn is_enabled(Logger) -> Bool
+
+pub fn is_prepared(PreparedStmt) -> Bool
+
+pub fn is_retryable(DbError) -> Bool
+
 pub fn is_tx_active(Tx) -> Bool
+
+pub fn log_error(Logger, String) -> Unit
+
+pub fn make_config(LogLevel, Bool) -> LoggerConfig
 
 pub fn make_db_config(String, Int) -> DbConfig
 
@@ -28,15 +68,45 @@ pub fn make_db_value_null() -> DbValue
 
 pub fn make_db_value_string(String) -> DbValue
 
+pub fn make_default_config() -> LoggerConfig
+
+pub fn make_default_logger() -> Logger
+
+pub fn make_logger(LoggerConfig) -> Logger
+
 pub fn make_pool(DbConfig) -> Pool
+
+pub fn make_prepared_stmt(String) -> PreparedStmt
+
+pub fn make_stmt_cache(Int) -> StmtCache
+
+pub fn make_stmt_id(String) -> StmtId
+
+pub fn mark_prepared(PreparedStmt) -> PreparedStmt
 
 pub fn pool_size(Pool) -> Int
 
+pub fn put(StmtCache, PreparedStmt) -> StmtCache
+
 pub fn query(Db, String, Array[DbValue]) -> Result[Array[DbValue], DbError]
+
+pub fn query_error(String) -> DbError
 
 pub fn return_connection(Pool, Db) -> Pool
 
 pub fn rollback_tx(Tx) -> Result[Unit, DbError]
+
+pub fn set_level(Logger, LogLevel) -> Logger
+
+pub fn size(StmtCache) -> Int
+
+pub fn timeout_error(String) -> DbError
+
+pub fn transaction_error(String) -> DbError
+
+pub fn unique_violation(String) -> DbError
+
+pub fn warn(Logger, String) -> Unit
 
 pub fn[T] with_transaction(Db, (Tx) -> Result[T, DbError]) -> Result[T, DbError]
 
@@ -55,8 +125,16 @@ pub struct DbConfig {
 
 pub enum DbError {
   ConnectionError(String)
-  QueryError(String)
   PoolExhausted
+  QueryError(String)
+  NotFound
+  UniqueViolation(String)
+  ForeignKeyViolation(String)
+  CheckViolation(String)
+  TransactionError(String)
+  Timeout(String)
+  TypeConversionError(String)
+  UnknownError(String)
 }
 
 pub enum DbValue {
@@ -66,10 +144,43 @@ pub enum DbValue {
   Bool(Bool)
 }
 
+pub enum LogLevel {
+  Debug
+  Info
+  Warn
+  Error
+}
+
+pub struct Logger {
+  config : LoggerConfig
+}
+
+pub struct LoggerConfig {
+  min_level : LogLevel
+  enabled : Bool
+}
+
 pub struct Pool {
   config : DbConfig
   available : Array[Db]
   active_count : Int
+}
+
+pub struct PreparedStmt {
+  id : StmtId
+  sql : String
+  prepared : Bool
+}
+
+pub struct StmtCache {
+  capacity : Int
+  entries : Array[(String, PreparedStmt)]
+  hit_count : Int
+  miss_count : Int
+}
+
+pub struct StmtId {
+  sql : String
 }
 
 pub struct Tx {
