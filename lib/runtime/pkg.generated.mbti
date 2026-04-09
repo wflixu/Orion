@@ -10,6 +10,8 @@ pub fn begin_nested_tx(Tx) -> Result[Tx, DbError]
 
 pub fn begin_tx(Db) -> Result[Tx, DbError]
 
+pub fn build(SqlBuilder) -> String
+
 pub fn clear(StmtCache) -> StmtCache
 
 pub fn close(Db) -> Result[Unit, DbError]
@@ -29,6 +31,8 @@ pub fn debug(Logger, String) -> Unit
 pub fn disable(Logger) -> Logger
 
 pub fn enable(Logger) -> Logger
+
+pub fn equal(String, String) -> SqlCondition
 
 pub fn error_message(DbError) -> String
 
@@ -58,9 +62,13 @@ pub fn get_status(Migration) -> MigrationStatus
 
 pub fn get_version(Migration) -> String
 
+pub fn greater_than(String, String) -> SqlCondition
+
 pub fn health_check(Pool) -> Pool
 
 pub fn hit_rate(StmtCache) -> Double
+
+pub fn in_list(String, Array[String]) -> SqlCondition
 
 pub fn info(Logger, String) -> Unit
 
@@ -72,11 +80,21 @@ pub fn is_connection_valid(Db) -> Bool
 
 pub fn is_enabled(Logger) -> Bool
 
+pub fn is_not_null(String) -> SqlCondition
+
+pub fn is_null(String) -> SqlCondition
+
 pub fn is_prepared(PreparedStmt) -> Bool
 
 pub fn is_retryable(DbError) -> Bool
 
 pub fn is_tx_active(Tx) -> Bool
+
+pub fn less_than(String, String) -> SqlCondition
+
+pub fn like(String, String) -> SqlCondition
+
+pub fn limit(SqlBuilder, Int) -> SqlBuilder
 
 pub fn log_error(Logger, String) -> Unit
 
@@ -104,9 +122,13 @@ pub fn make_migration(String, String, String, String) -> Migration
 
 pub fn make_migration_config(String, String) -> MigrationConfig
 
+pub fn make_order(String, Bool) -> SqlOrder
+
 pub fn make_pool(DbConfig) -> Pool
 
 pub fn make_prepared_stmt(String) -> PreparedStmt
+
+pub fn make_sql_builder(String) -> SqlBuilder
 
 pub fn make_stmt_cache(Int) -> StmtCache
 
@@ -124,6 +146,12 @@ pub fn migration_status_failed() -> MigrationStatus
 
 pub fn migration_status_pending() -> MigrationStatus
 
+pub fn not_equal(String, String) -> SqlCondition
+
+pub fn offset(SqlBuilder, Int) -> SqlBuilder
+
+pub fn order_by(SqlBuilder, SqlOrder) -> SqlBuilder
+
 pub fn pool_size(Pool) -> Int
 
 pub fn put(StmtCache, PreparedStmt) -> StmtCache
@@ -131,6 +159,8 @@ pub fn put(StmtCache, PreparedStmt) -> StmtCache
 pub fn query(Db, String, Array[DbValue]) -> Result[Array[DbValue], DbError]
 
 pub fn query_error(String) -> DbError
+
+pub fn raw_sql(String) -> SqlCondition
 
 pub fn return_connection(Pool, Db) -> Pool
 
@@ -146,6 +176,12 @@ pub fn set_status(Migration, MigrationStatus) -> Migration
 
 pub fn size(StmtCache) -> Int
 
+pub fn sql_and(Array[SqlCondition]) -> SqlCondition
+
+pub fn sql_not(SqlCondition) -> SqlCondition
+
+pub fn sql_or(Array[SqlCondition]) -> SqlCondition
+
 pub fn timeout_error(String) -> DbError
 
 pub fn transaction_error(String) -> DbError
@@ -153,6 +189,8 @@ pub fn transaction_error(String) -> DbError
 pub fn unique_violation(String) -> DbError
 
 pub fn warn(Logger, String) -> Unit
+
+pub fn where_clause(SqlBuilder, SqlCondition) -> SqlBuilder
 
 pub fn[T] with_nested_transaction(Tx, (Tx) -> Result[T, DbError]) -> Result[T, DbError]
 
@@ -250,6 +288,34 @@ pub struct PreparedStmt {
   id : StmtId
   sql : String
   prepared : Bool
+}
+
+pub struct SqlBuilder {
+  base_query : String
+  conditions : Array[SqlCondition]
+  order_by : Array[SqlOrder]
+  limit : Int?
+  offset : Int?
+}
+
+pub enum SqlCondition {
+  Equal(String, String)
+  NotEqual(String, String)
+  GreaterThan(String, String)
+  LessThan(String, String)
+  Like(String, String)
+  In(String, Array[String])
+  IsNull(String)
+  IsNotNull(String)
+  And(Array[SqlCondition])
+  Or(Array[SqlCondition])
+  Not(SqlCondition)
+  Raw(String)
+}
+
+pub struct SqlOrder {
+  column : String
+  ascending : Bool
 }
 
 pub struct StmtCache {
