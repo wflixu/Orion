@@ -22,10 +22,15 @@ test "parse_args generate" {
 
 ///|
 test "parse_args migrate" {
-  let args = ["orion", "migrate", "sqlite://test.db"]
+  let args = ["orion", "migrate", "status", "sqlite://test.db"]
   let cmd = @cli.parse_args(args)
   match cmd {
-    @cli.Command::Migrate(url) => assert_eq(url, "sqlite://test.db")
+    @cli.Command::Migrate(subcmd) =>
+      match subcmd {
+        @cli.MigrateSubcommand::Status(url) =>
+          assert_eq(url, "sqlite://test.db")
+        _ => println("wrong subcommand")
+      }
     _ => println("wrong command")
   }
 }
@@ -51,7 +56,8 @@ test "run_generate" {
 
 ///|
 test "run_migrate" {
-  let result = @cli.run_migrate("sqlite://test.db")
+  let subcmd = @cli.migrate_status("sqlite://test.db")
+  let result = @cli.run_migrate_subcommand(subcmd)
   match result {
     Ok(_) => ()
     Err(_) => println("run_migrate failed")
@@ -91,7 +97,8 @@ test "run_generate returns Ok" {
 
 ///|
 test "run_migrate returns Ok" {
-  let result = @cli.run_migrate("sqlite://test.db")
+  let subcmd = @cli.migrate_status("sqlite://test.db")
+  let result = @cli.run_migrate_subcommand(subcmd)
   match result {
     Ok(_) => assert_eq(true, true)
     Err(_) => println("run_migrate should succeed")
@@ -110,10 +117,14 @@ test "parse_args with gen alias" {
 
 ///|
 test "parse_args with mig alias" {
-  let args = ["orion", "mig", "sqlite://db"]
+  let args = ["orion", "mig", "status", "sqlite://db"]
   let cmd = @cli.parse_args(args)
   match cmd {
-    @cli.Command::Migrate(url) => assert_eq(url, "sqlite://db")
+    @cli.Command::Migrate(subcmd) =>
+      match subcmd {
+        @cli.MigrateSubcommand::Status(url) => assert_eq(url, "sqlite://db")
+        _ => println("wrong subcommand")
+      }
     _ => println("wrong command")
   }
 }

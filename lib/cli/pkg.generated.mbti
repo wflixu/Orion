@@ -8,11 +8,19 @@ pub fn generate_from_sql(String, String) -> Result[String, String]
 
 pub fn get_args() -> Array[String]
 
+pub fn migrate_down(String) -> MigrateSubcommand
+
+pub fn migrate_status(String) -> MigrateSubcommand
+
+pub fn migrate_up(String) -> MigrateSubcommand
+
 pub fn parse_args(Array[String]) -> Command
 
 pub fn run_generate(String) -> Result[Unit, String]
 
 pub fn run_migrate(String) -> Result[Unit, String]
+
+pub fn run_migrate_subcommand(MigrateSubcommand) -> Result[Unit, String]
 
 pub fn show_help() -> Unit
 
@@ -21,8 +29,16 @@ pub fn show_help() -> Unit
 // Types and methods
 pub enum Command {
   Generate(String)
-  Migrate(String)
+  Migrate(MigrateSubcommand)
   Help
+}
+
+pub enum MigrateSubcommand {
+  Status(String)
+  Up(String)
+  Down(String)
+  Create(String, String)
+  Reset(String)
 }
 
 // Type aliases

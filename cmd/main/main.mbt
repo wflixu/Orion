@@ -13,8 +13,8 @@ fn main {
         Err(e) => println("Error: " + e)
       }
     }
-    @cli.Command::Migrate(url) => {
-      let result = @cli.run_migrate(url)
+    @cli.Command::Migrate(subcmd) => {
+      let result = @cli.run_migrate_subcommand(subcmd)
       match result {
         Ok(_) => ()
         Err(e) => println("Error: " + e)
