@@ -4,6 +4,8 @@ package "wflixu/Orion/lib/runtime"
 // Values
 pub fn active_count(Pool) -> Int
 
+pub fn begin_nested_tx(Tx) -> Result[Tx, DbError]
+
 pub fn begin_tx(Db) -> Result[Tx, DbError]
 
 pub fn clear(StmtCache) -> StmtCache
@@ -12,7 +14,7 @@ pub fn close(Db) -> Result[Unit, DbError]
 
 pub fn close_pool(Pool) -> Result[Unit, DbError]
 
-pub fn commit_tx(Tx) -> Result[Unit, DbError]
+pub fn commit_tx(Tx) -> Result[Tx, DbError]
 
 pub fn connect(DbConfig) -> Db
 
@@ -34,9 +36,13 @@ pub fn get(StmtCache, String) -> Result[(PreparedStmt, StmtCache), DbError]
 
 pub fn get_connection(Pool) -> Result[(Db, Pool), DbError]
 
+pub fn get_depth(Tx) -> Int
+
 pub fn get_level(Logger) -> LogLevel
 
 pub fn get_or_create(StmtCache, String) -> (PreparedStmt, StmtCache)
+
+pub fn get_parent(Tx) -> Tx?
 
 pub fn health_check(Pool) -> Pool
 
@@ -94,7 +100,7 @@ pub fn query_error(String) -> DbError
 
 pub fn return_connection(Pool, Db) -> Pool
 
-pub fn rollback_tx(Tx) -> Result[Unit, DbError]
+pub fn rollback_tx(Tx) -> Result[Tx, DbError]
 
 pub fn set_level(Logger, LogLevel) -> Logger
 
@@ -107,6 +113,8 @@ pub fn transaction_error(String) -> DbError
 pub fn unique_violation(String) -> DbError
 
 pub fn warn(Logger, String) -> Unit
+
+pub fn[T] with_nested_transaction(Tx, (Tx) -> Result[T, DbError]) -> Result[T, DbError]
 
 pub fn[T] with_transaction(Db, (Tx) -> Result[T, DbError]) -> Result[T, DbError]
 
@@ -186,10 +194,15 @@ pub struct StmtId {
 pub struct Tx {
   db : Db
   status : TxStatus
+  depth : Int
+  parent : Tx?
 }
 
 pub enum TxStatus {
   Active
+  Committed
+  RolledBack
+  Failed
 }
 
 // Type aliases
