@@ -4,9 +4,95 @@
 ///|
 /// 数据库错误类型
 pub enum DbError {
+  // 连接相关错误
   ConnectionError(String)
-  QueryError(String)
   PoolExhausted
+
+  // 查询相关错误
+  QueryError(String)
+  NotFound
+
+  // 约束违反错误
+  UniqueViolation(String)
+  ForeignKeyViolation(String)
+  CheckViolation(String)
+
+  // 事务相关错误
+  TransactionError(String)
+
+  // 超时错误
+  Timeout(String)
+
+  // 类型转换错误
+  TypeConversionError(String)
+
+  // 其他错误
+  UnknownError(String)
+}
+
+///|
+/// 创建连接错误
+pub fn connection_error(msg : String) -> DbError {
+  DbError::ConnectionError(msg)
+}
+
+///|
+/// 创建查询错误
+pub fn query_error(msg : String) -> DbError {
+  DbError::QueryError(msg)
+}
+
+///|
+/// 创建唯一约束违反错误
+pub fn unique_violation(msg : String) -> DbError {
+  DbError::UniqueViolation(msg)
+}
+
+///|
+/// 创建外键约束违反错误
+pub fn foreign_key_violation(msg : String) -> DbError {
+  DbError::ForeignKeyViolation(msg)
+}
+
+///|
+/// 创建事务错误
+pub fn transaction_error(msg : String) -> DbError {
+  DbError::TransactionError(msg)
+}
+
+///|
+/// 创建超时错误
+pub fn timeout_error(msg : String) -> DbError {
+  DbError::Timeout(msg)
+}
+
+///|
+/// 检查错误是否为可重试错误
+pub fn is_retryable(err : DbError) -> Bool {
+  match err {
+    DbError::ConnectionError(_) => true
+    DbError::Timeout(_) => true
+    DbError::PoolExhausted => true
+    _ => false
+  }
+}
+
+///|
+/// 获取错误消息
+pub fn error_message(err : DbError) -> String {
+  match err {
+    DbError::ConnectionError(msg) => "Connection error: " + msg
+    DbError::QueryError(msg) => "Query error: " + msg
+    DbError::PoolExhausted => "Connection pool exhausted"
+    DbError::NotFound => "Record not found"
+    DbError::UniqueViolation(msg) => "Unique constraint violation: " + msg
+    DbError::ForeignKeyViolation(msg) => "Foreign key constraint violation: " + msg
+    DbError::CheckViolation(msg) => "Check constraint violation: " + msg
+    DbError::TransactionError(msg) => "Transaction error: " + msg
+    DbError::Timeout(msg) => "Operation timeout: " + msg
+    DbError::TypeConversionError(msg) => "Type conversion error: " + msg
+    DbError::UnknownError(msg) => "Unknown error: " + msg
+  }
 }
 
 ///|
