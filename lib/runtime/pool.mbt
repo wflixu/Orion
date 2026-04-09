@@ -84,7 +84,39 @@ pub fn close_pool(pool : Pool) -> Result[Unit, DbError] {
 }
 
 ///|
+/// 检查单个连接是否有效
+pub fn is_connection_valid(db : Db) -> Bool {
+  db.connected
+}
+
+///|
+/// 对池中所有可用连接进行健康检查
+/// 返回清理掉无效连接后的新池
+pub fn health_check(pool : Pool) -> Pool {
+  let valid_connections : Array[Db] = []
+  let mut i = 0
+  while i < Array::length(pool.available) {
+    let conn = pool.available[i]
+    if is_connection_valid(conn) {
+      valid_connections.push(conn)
+    }
+    i += 1
+  }
+  {
+    config: pool.config,
+    available: valid_connections,
+    active_count: pool.active_count,
+  }
+}
+
+///|
 /// 获取池中可用连接数
 pub fn pool_size(pool : Pool) -> Int {
   Array::length(pool.available)
+}
+
+///|
+/// 获取池中活跃连接数
+pub fn active_count(pool : Pool) -> Int {
+  pool.active_count
 }
