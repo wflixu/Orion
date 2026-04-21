@@ -1,7 +1,7 @@
 # Orion 实现计划
 
-**版本**: v0.2.0
-**目标**: Derive + Codegen ORM
+**版本**: v0.3.0
+**目标**: 生产就绪 - 动态 SQL、事务、迁移、PostgreSQL
 **创建日期**: 2026-04-21
 **更新日期**: 2026-04-21
 
@@ -174,17 +174,65 @@ let users = new_users_query(db)
 
 ## 六、下一步计划
 
-### v0.2.1 (可选)
-
-- [ ] PostgreSQL 驱动完善
-- [ ] MySQL 驱动
-- [ ] 连接池增强
-
 ### v0.3.0
 
-- [ ] 动态 SQL 支持
-- [ ] 高级查询构建器
+| 功能 | 描述 | 优先级 |
+|------|------|--------|
+| 动态 SQL 支持 | `[@if]...[@endif]` 语法 | P0 |
+| 事务支持 | `Orion.transaction(fn(tx) {...})` | P0 |
+| Migration CLI | `orion migrate up/down/create` | P0 |
+| PostgreSQL 驱动完善 | 完整 PG 驱动支持 | P0 |
+| 高级查询构建器 | 链式查询增强 | P1 |
+| 连接池增强 | 配置化 poolSize、timeout | P1 |
+
+### v0.4.0
+
+| 功能 | 描述 | 优先级 |
+|------|------|--------|
+| MySQL 驱动 | MySQL 数据库支持 | P2 |
+| 批量操作 | 批量 insert/update | P1 |
+| 关系定义 | hasOne, hasMany | P2 |
 
 ---
 
 **最后更新**: 2026-04-21
+
+---
+
+## 七、v0.3.0 任务详情
+
+### 动态 SQL 支持
+
+| 任务 | 描述 |
+|------|------|
+| 语法设计 | `[@if condition]...[@endif]`, `[@for item in list]...[@endfor]` |
+| Parser 实现 | 解析动态 SQL 标签 |
+| Codegen 实现 | 为动态 SQL 生成条件代码 |
+| 测试覆盖 | 单元测试 + 集成测试 |
+
+### 事务支持
+
+| 任务 | 描述 |
+|------|------|
+| API 设计 | `Orion.transaction(db, fn(tx) {...})` |
+| TxContext | 事务上下文传递 |
+| 连接管理 | 事务内连接复用 |
+| 错误处理 | 自动回滚 |
+
+### Migration CLI
+
+| 任务 | 描述 |
+|------|------|
+| `migrate create` | 创建迁移文件 |
+| `migrate up` | 应用迁移 |
+| `migrate down` | 回滚迁移 |
+| `migrate dev` | 开发环境快速迁移 |
+
+### PostgreSQL 驱动
+
+| 任务 | 描述 |
+|------|------|
+| 连接管理 | libpq 连接池 |
+| 类型映射 | PostgreSQL 类型 → MoonBit 类型 |
+| SQL 生成 | PostgreSQL dialect DDL |
+| 查询执行 | 参数化查询支持 |
