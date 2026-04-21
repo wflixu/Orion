@@ -1,20 +1,19 @@
 {
   "name": "wflixu/Orion",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "readme": "README.mbt.md",
   "repository": "https://github.com/wflixu/Orion",
   "license": "MIT",
   "keywords": [
     "database",
-    "sql",
-    "mapper",
     "orm",
+    "schema",
+    "codegen",
     "sqlite",
     "postgresql",
     "mysql",
-    "codegen",
     "type-safe",
     "cli"
   ],
-  "description": "SQL-first, type-safe data access layer for MoonBit following the Mapper pattern. Inspired by MyBatis, sqlx, and Prisma."
+  "description": "Derive + Codegen ORM for MoonBit. Schema DSL, type-safe CRUD, Query Builder."
 }
