@@ -39,10 +39,16 @@ fn main {
 
   // 生成 DDL
   println("\n=== Generated DDL (SQLite) ===")
-  let sqlite_ddl = @schema.generate_create_table_sql(user_schema, @schema.parse_db_type("sqlite"))
+  let sqlite_ddl = @schema.generate_create_table_sql(
+    user_schema,
+    @schema.parse_db_type("sqlite"),
+  )
   println(sqlite_ddl)
 
   println("\n=== Generated DDL (PostgreSQL) ===")
-  let postgres_ddl = @schema.generate_create_table_sql(user_schema, @schema.parse_db_type("postgres"))
+  let postgres_ddl = @schema.generate_create_table_sql(
+    user_schema,
+    @schema.parse_db_type("postgres"),
+  )
   println(postgres_ddl)
 }
