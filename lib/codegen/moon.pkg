@@ -1,5 +1,7 @@
 import {
   "wflixu/Orion/lib/parser",
+  "wflixu/Orion/lib/schema",
+  "wflixu/Orion/lib/runtime",
 }
 
 options(

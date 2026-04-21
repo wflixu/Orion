@@ -1,0 +1,184 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wflixu/Orion/lib/schema"
+
+// Values
+pub fn add_bool_field(TableSchemaBuilder, String, Array[Constraint]) -> TableSchemaBuilder
+
+pub fn add_field(TableSchemaBuilder, String, FieldType, Array[Constraint]) -> TableSchemaBuilder
+
+pub fn add_index(TableSchemaBuilder, String, Array[String], Bool) -> TableSchemaBuilder
+
+pub fn add_int_field(TableSchemaBuilder, String, Array[Constraint]) -> TableSchemaBuilder
+
+pub fn add_normal_index(TableSchemaBuilder, String, Array[String]) -> TableSchemaBuilder
+
+pub fn add_string_field(TableSchemaBuilder, String, Array[Constraint]) -> TableSchemaBuilder
+
+pub fn add_unique_index(TableSchemaBuilder, String, Array[String]) -> TableSchemaBuilder
+
+pub fn auto_inc() -> Constraint
+
+pub fn build_schema(TableSchemaBuilder) -> TableSchema
+
+pub fn constraint_invalid(Array[String]) -> ConstraintValidationResult
+
+pub fn constraint_to_sql(Constraint, DbType) -> String?
+
+pub fn constraint_valid() -> ConstraintValidationResult
+
+pub fn default(String) -> Constraint
+
+pub fn field_constraints(FieldDef) -> Array[Constraint]
+
+pub fn field_default_value(FieldDef) -> String?
+
+pub fn field_has_default(FieldDef) -> Bool
+
+pub fn field_is_auto_inc(FieldDef) -> Bool
+
+pub fn field_is_not_null(FieldDef) -> Bool
+
+pub fn field_is_primary_key(FieldDef) -> Bool
+
+pub fn field_is_unique(FieldDef) -> Bool
+
+pub fn field_name(FieldDef) -> String
+
+pub fn field_to_sql(FieldDef, DbType) -> String
+
+pub fn field_type(FieldDef) -> FieldType
+
+pub fn field_type_to_sql(FieldType) -> String
+
+pub fn foreign_key(String, String) -> Constraint
+
+pub fn generate_create_table_sql(TableSchema, DbType) -> String
+
+pub fn generate_drop_table_sql(TableSchema) -> String
+
+pub fn generate_migration_sql(TableSchema, DbType) -> String
+
+pub fn get_primary_key_field(TableSchema) -> FieldDef?
+
+pub fn index() -> Constraint
+
+pub fn index_columns(IndexDef) -> Array[String]
+
+pub fn index_is_unique(IndexDef) -> Bool
+
+pub fn index_name(IndexDef) -> String
+
+pub fn index_to_sql(IndexDef, String) -> String
+
+pub fn make_field(String, FieldType, Array[Constraint]) -> FieldDef
+
+pub fn make_index(String, Array[String], Bool) -> IndexDef
+
+pub fn make_normal_index(String, Array[String]) -> IndexDef
+
+pub fn make_schema_error(String, String) -> SchemaValidationError
+
+pub fn make_table_schema(String, Array[FieldDef], Array[IndexDef]) -> TableSchema
+
+pub fn make_unique_index(String, Array[String]) -> IndexDef
+
+pub fn max_length(Int) -> Constraint
+
+pub fn moonbit_type_to_sql(FieldType, DbType) -> String
+
+pub fn not_null() -> Constraint
+
+pub fn parse_db_type(String) -> DbType
+
+pub fn pk_auto_inc() -> Array[Constraint]
+
+pub fn primary_key() -> Constraint
+
+pub fn required() -> Array[Constraint]
+
+pub fn schema(String) -> TableSchemaBuilder
+
+pub fn table_fields(TableSchema) -> Array[FieldDef]
+
+pub fn table_indexes(TableSchema) -> Array[IndexDef]
+
+pub fn table_name(TableSchema) -> String
+
+pub fn unique() -> Constraint
+
+pub fn unique_required() -> Array[Constraint]
+
+pub fn validate_constraints(Array[Constraint]) -> ConstraintValidationResult
+
+pub fn validate_schema(TableSchema) -> Array[SchemaValidationError]
+
+pub fn with_default(String) -> Array[Constraint]
+
+// Errors
+
+// Types and methods
+pub enum Constraint {
+  PrimaryKey
+  AutoInc
+  NotNull
+  Unique
+  Default(String)
+  MaxLength(Int)
+  Index
+  ForeignKey(String, String)
+} derive(Eq)
+
+pub struct ConstraintValidationResult {
+  valid : Bool
+  errors : Array[String]
+}
+
+pub enum DbType {
+  SQLite
+  PostgreSQL
+  MySQL
+}
+
+pub struct FieldDef {
+  name : String
+  field_type : FieldType
+  constraints : Array[Constraint]
+}
+
+pub enum FieldType {
+  Int
+  String
+  Bool
+  Float
+  DateTime
+  Json
+  Blob
+} derive(Eq)
+
+pub struct IndexDef {
+  name : String
+  columns : Array[String]
+  unique : Bool
+}
+
+pub struct SchemaValidationError {
+  field : String
+  message : String
+}
+
+pub struct TableSchema {
+  name : String
+  fields : Array[FieldDef]
+  indexes : Array[IndexDef]
+}
+
+pub struct TableSchemaBuilder {
+  name : String
+  fields : Array[FieldDef]
+  indexes : Array[IndexDef]
+}
+
+// Type aliases
+
+// Traits
+

@@ -1,13 +1,54 @@
-# Orion PRD - SQL-first 类型安全数据访问层
+# Orion PRD - Derive + Codegen ORM for MoonBit
 
 ## 一、项目定位
 
-**Orion = SQL-first + 类型安全 + Mapper 模式 + 工程化数据访问层**
+**Orion = Derive + Codegen ORM + 类型安全 + 工程化数据访问层**
 
 对标产品：
-- **MyBatis**（Mapper 模式）
+- **Prisma**（工程化体验 + Schema DSL）
 - **Drizzle ORM**（类型安全）
-- **Prisma**（工程化体验）
+- **SeaORM**（Rust derive 模式）
+- **MyBatis**（Mapper 模式）
+
+### 1.1 核心设计
+
+| 维度 | 说明 |
+|------|------|
+| 定义方式 | Schema DSL (MoonBit 代码) |
+| 代码生成 | 从 Schema 生成 Struct + CRUD + Query Builder |
+| 类型安全 | 编译时验证 + derive(Eq, Hash, FromJson, ToJson, Show) |
+| 适用场景 | 快速 CRUD、原型开发 |
+
+### 1.2 MoonBit 语言限制与应对
+
+| 限制 | 影响 | 应对方案 |
+|------|------|----------|
+| ❌ 不支持用户自定义 derive | 无法 `derive(Entity)` | 外部代码生成器 |
+| ❌ 不支持字段级注解 | 无法标注 `@Id`, `@AutoInc` | Schema DSL 中定义 |
+| ❌ 不支持运行时反射 | 无法动态读取 schema | 编译时生成代码 |
+| ✅ 支持内置 derive | `derive(Eq, Hash, FromJson, ToJson)` | 为生成的 struct 自动添加 |
+
+### 1.3 使用示例
+
+```moonbit
+// 1. 用户定义 schema
+let user_schema = @schema.schema("users")
+  |> @schema.add_int_field("id", @schema.pk_auto_inc())
+  |> @schema.add_string_field("name", @schema.required())
+  |> @schema.add_string_field("email", @schema.unique_required())
+  |> @schema.build_schema()
+
+// 2. 生成代码
+let struct_code = @codegen.gen_full_struct(user_schema)
+let crud_code = @codegen.gen_full_crud(user_schema)
+let query_code = @codegen.gen_full_query_builder(user_schema)
+
+// 3. 生成的代码
+// pub struct User { id: Int, name: String, email: String }
+// pub struct UsersMapper { db: @runtime.Db }
+// pub fn create_user(mapper: UsersMapper, name: String, email: String) -> Result[Int, DbError]
+// pub fn find_user_by_id(mapper: UsersMapper, id: Int) -> Result[Option[User], DbError]
+```
 
 ---
 
@@ -148,22 +189,22 @@ moon test -j  # 并行测试
 ```
         ┌────────────────────┐
         │     Orion CLI      │
-        │ (generate/migrate) │
+        │ (schema/migrate)   │
         └────────┬───────────┘
                  │
         ┌────────▼───────────┐
-        │   SQL / Mapper     │
-        │    (*.sql files)   │
+        │   Schema DSL       │
+        │   (*.mbt files)    │
         └────────┬───────────┘
                  │
         ┌────────▼───────────┐
-        │   Code Generator   │
-        │ (types + functions)│
+        │   Codegen 2.0     │
+        │ (Struct+CRUD+QB)  │
         └────────┬───────────┘
                  │
         ┌────────▼───────────┐
-        │   Orion Runtime    │
-        │  (pool/tx/log)     │
+        │   Orion Runtime   │
+        │  (pool/tx/log)    │
         └────────┬───────────┘
                  │
            ┌─────▼─────┐
@@ -175,119 +216,102 @@ moon test -j  # 并行测试
 
 | 决策点 | 选择 | 理由 |
 |--------|------|------|
-| **MVP 范围** | 最小版本（2 周） | 快速验证核心假设 |
-| **SQL 参数风格** | 两者都支持 (`?` 和 `$1`) | 兼容多数据库 |
-| **动态 SQL** | 自定义语法 | 更适合 MoonBit，避免 XML 繁琐 |
-| **代码生成** | Mapper 模式 | 平衡简洁性和组织性 |
-| **数据库支持** | 同时支持 SQLite/Postgres/MySQL | 用户需求驱动 |
-| **DSL** | ❌ 不做 | SQL 已经够强，MoonBit 类型系统足够 |
-| **Query Builder** | ❌ 初期不做 | 聚焦核心 |
+| **Schema 定义** | MoonBit 代码 (Schema DSL) | 原生语法，无需学习新 DSL |
+| **代码生成** | Schema → Struct + CRUD + Query Builder | 编译时生成类型安全代码 |
+| **derive 支持** | 内置 derive (Eq, Hash, FromJson, ToJson, Show) | MoonBit 原生支持 |
+| **数据库支持** | SQLite (v0.2) / PostgreSQL (v0.2.1) / MySQL (v0.2.2) | 用户需求驱动 |
+| **参数风格** | `?` 风格 (SQLite) | 简化实现 |
 
 ---
 
 ## 五、详细设计
 
-### 5.1 SQL 文件规范
-
-```sql
--- name: getUserById
--- description: Get user by ID
--- result: single
-SELECT id, name, age FROM users WHERE id = ?;
-
--- name: createUser
--- description: Create a new user
--- result: last_insert_id
-INSERT INTO users (name, age) VALUES (?, ?);
-
--- name: findUsers (动态 SQL 示例)
--- description: Find users with optional filters
-SELECT * FROM users
-WHERE 1=1
-[@if name]
-AND name = ?
-[@endif]
-[@if minAge]
-AND age >= ?
-[@endif]
-;
-```
-
-**语法说明：**
-- `-- name:` 必填，函数名
-- `-- description:` 可选，描述
-- `-- result:` 返回类型（`single`/`many`/`last_insert_id`/`affected_rows`）
-- `[@if xxx]...[@endif]` 动态 SQL 块
-- 参数使用 `?` 或 `$1` 风格
-
-### 5.2 代码生成输出
-
-**生成的 MoonBit 代码：**
+### 5.1 Schema DSL 语法
 
 ```moonbit
-// 自动生成的 struct（可选）
-struct User {
+let user_schema = @schema.schema("users")
+  |> @schema.add_int_field("id", @schema.pk_auto_inc())
+  |> @schema.add_string_field("name", @schema.required())
+  |> @schema.add_string_field("email", @schema.unique_required())
+  |> @schema.add_int_field("age", [])
+  |> @schema.add_bool_field("active", @schema.with_default("true"))
+  |> @schema.add_normal_index("idx_name", ["name"])
+  |> @schema.add_unique_index("uniq_email", ["email"])
+  |> @schema.build_schema()
+```
+
+### 5.2 约束类型
+
+| 约束 | 说明 | 示例 |
+|------|------|------|
+| `pk_auto_inc()` | 主键 + 自增 | id |
+| `required()` | 非空 | name |
+| `unique_required()` | 唯一 + 非空 | email |
+| `unique()` | 唯一 | code |
+| `not_null()` | 非空 | description |
+| `with_default(val)` | 默认值 | active |
+| `max_length(n)` | 最大长度 | name |
+| `normal_index(name, cols)` | 普通索引 | - |
+| `unique_index(name, cols)` | 唯一索引 | - |
+
+### 5.3 代码生成输出
+
+**生成的 Struct + CRUD:**
+
+```moonbit
+pub struct User {
   id: Int
   name: String
+  email: String
   age: Int
+  active: Bool
+} derive(Eq, Hash, FromJson, ToJson, Show)
+
+pub struct UsersMapper {
+  db: @runtime.Db
 }
 
-// Mapper 模块
-struct UserMapper {
-  db: Orion.Db
+pub fn create_user(self: UsersMapper, name: String, email: String, age: Int, active: Bool) -> Result[Int, @runtime.DbError]
+pub fn find_user_by_id(self: UsersMapper, id: Int) -> Result[Option[User], @runtime.DbError]
+pub fn find_all_users(self: UsersMapper) -> Result[List[User], @runtime.DbError]
+pub fn update_user(self: UsersMapper, id: Int, name: String, email: String, age: Int, active: Bool) -> Result[Int, @runtime.DbError]
+pub fn delete_user_by_id(self: UsersMapper, id: Int) -> Result[Int, @runtime.DbError]
+```
+
+**生成的 Query Builder:**
+
+```moonbit
+pub struct UsersQuery {
+  db: @runtime.Db
+  where_clauses: Array[String]
+  params: Array[@runtime.DbValue]
+  order_by: Option[String]
+  limit: Option[Int]
+  offset: Option[Int]
 }
 
-// 生成的函数
-fn getUserById(self : UserMapper, id: Int) -> Result[Option[User]]
-
-fn createUser(self: UserMapper, name: String, age: Int) -> Result[Int]
-
-fn findUsers(self: UserMapper, name: Option[String], minAge: Option[Int]) -> Result[List[User]]
+pub fn UsersQuery::where_name(self, value: String) -> Self
+pub fn UsersQuery::where_name_contains(self, pattern: String) -> Self
+pub fn UsersQuery::where_name_starts_with(self, prefix: String) -> Self
+pub fn UsersQuery::order_by_id(self, desc: Bool) -> Self
+pub fn UsersQuery::limit(self, n: Int) -> Self
+pub fn UsersQuery::execute(self) -> Result[List[User], @runtime.DbError]
 ```
-
-### 5.3 动态 SQL 实现
-
-**自定义语法设计：**
-
-```
-[@if condition]
-SQL fragment
-[@endif]
-
-[@if condition]
-SQL fragment
-[@else]
-alternative fragment
-[@endif]
-
-[@for item in list]
-SQL fragment with @item
-[@endfor]
-```
-
-**优势：**
-- 简洁，类似注释
-- 不依赖 XML
-- 易于 parser 实现
-- 与 SQL 注释风格一致
 
 ### 5.4 运行时设计
 
 ```moonbit
 // 连接池
-let db = Orion.connect({
+let db = @runtime.connect({
   url: "sqlite://app.db",
-  poolSize: 10
+  pool_size: 10
 })
 
-// 事务
-Orion.transaction(db, fn(tx) {
-  UserMapper.create(tx, "A", 18)
-  UserMapper.create(tx, "B", 20)
+// 事务 (v0.2.1)
+@runtime.transaction(db, fn(tx) {
+  create_user(mapper, "A", "a@test.com", 18)
+  create_user(mapper, "B", "b@test.com", 20)
 })
-
-// 日志
-Orion.enableLog(db, level: Debug)
 
 // 错误处理
 enum DbError {
@@ -304,49 +328,59 @@ enum DbError {
 
 采用语义化版本，基于 0.1.x 迭代，MVP 完成后升级 0.2.x
 
-### v0.1.0 - MVP (2 周)
+### v0.1.0 - MVP (2 周) ✅
 
 | 功能 | 描述 | 状态 |
 |------|------|------|
-| SQL Parser | 解析 `.sql` 文件，提取 `-- name:` 和参数 | 核心 |
-| Codegen | 生成函数签名 + struct | 核心 |
-| SQLite Driver | 基础查询执行 | 核心 |
-| Runtime | `query()` / `execute()` 基础 API | 核心 |
+| SQL Parser | 解析 `.sql` 文件，提取 `-- name:` 和参数 | ✅ |
+| Codegen | 生成函数签名 + struct | ✅ |
+| SQLite Driver | 基础查询执行 | ✅ |
+| Runtime | `query()` / `execute()` 基础 API | ✅ |
 
-### v0.1.1 - v0.1.x 迭代
+### v0.1.1 - v0.1.x 迭代 ✅
 
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
-| 连接池 | 基础连接管理 | P0 |
-| 错误处理 | `DbError` 枚举 + 错误转换 | P0 |
-| 日志系统 | Debug 日志输出 | P1 |
-| 参数风格 | 支持 `?` 和 `$1` 两种风格 | P1 |
+| 连接池 | 基础连接管理 | ✅ P0 |
+| 错误处理 | `DbError` 枚举 + 错误转换 | ✅ P0 |
+| 日志系统 | Debug 日志输出 | ✅ P1 |
+| 参数风格 | 支持 `?` 和 `$1` 两种风格 | ✅ P1 |
 
-### v0.2.0 - 生产就绪 (MVP+)
+### v0.2.0 - Derive + Codegen ORM ✅
 
 在 v0.1.x 基础上添加：
+
+| 功能 | 描述 | 优先级 | 状态 |
+|------|------|--------|------|
+| Schema DSL | 声明式表定义语法 | P0 | ✅ 完成 |
+| Codegen 2.0 | 从 Schema 生成 Struct + CRUD | P0 | ✅ 完成 |
+| Query Builder | 链式查询构建器 | P0 | ✅ 完成 |
+| derive 支持 | 为生成的 struct 自动添加 derive | P0 | ✅ 完成 |
+| CLI 增强 | `orion schema <dir>` 命令 | P0 | ✅ 完成 |
+
+### v0.2.1 - 生产就绪
 
 | 功能 | 描述 |
 |------|------|
 | 事务支持 | `Orion.transaction(fn(tx) {...})` |
 | Migration CLI | `orion migrate up/down/create` |
 | PostgreSQL 支持 | 完整的 PG 驱动 |
-| 连接池增强 | 配置化 poolSize、timeout |
 
-### v0.3.0 - 高级特性
+### v0.2.2 - 增强特性
 
 | 功能 | 描述 |
 |------|------|
-| 动态 SQL | `[@if]...[@endif]` 语法支持 |
+| 高级查询构建器 | 链式查询增强 |
+| 连接池增强 | 配置化 poolSize、timeout |
 | MySQL 支持 | MySQL 驱动 |
 | 批量操作 | 批量 insert/update |
-| 性能优化 | 查询缓存、预编译优化 |
 
-### v0.4.0+ - 未来规划
+### v0.2.3+ - 未来规划
 
 | 功能 | 描述 |
 |------|------|
-| `orion pull` | 从数据库反向生成 |
+| 关系定义 | hasOne, hasMany |
+| `orion pull` | 从数据库反向生成 schema |
 | 只读查询优化 | 读写分离支持 |
 | 多数据源 | 多数据库连接 |
 
@@ -355,33 +389,29 @@ enum DbError {
 ## 七、CLI 设计
 
 ```bash
-# 代码生成（核心）
-orion gen           # 从 *.sql 生成 MoonBit 代码
-orion gen --watch   # 监听模式
+# Schema 代码生成（核心）
+orion schema <dir>          # 从 schema 目录生成代码
 
-# 数据库迁移（v0.2.0+）
+# 数据库迁移（v0.2.1）
 orion migrate dev           # 开发环境迁移
 orion migrate up            # 应用迁移
 orion migrate down          # 回滚迁移
-orion migrate create name   # 创建新迁移
+orion migrate create <name> # 创建新迁移
 
-# 数据库 introspection（v0.4.0+）
+# 数据库 introspection（未来）
 orion pull                  # 从数据库生成 schema
-orion introspect            # 查看数据库结构
 ```
 
 ---
 
-## 八、MVP 范围（v0.1.0 - 2 周）
+## 八、核心功能（v0.2.0 完成）
 
-### 必须实现
-
-| 功能 | 描述 |
-|------|------|
-| **SQL Parser** | 解析 `.sql` 文件，提取 `-- name:` 和参数 |
-| **Codegen** | 生成函数签名 + struct（可选） |
-| **SQLite Driver** | 基础查询执行（复用 myfreess/sqlite3） |
-| **Runtime** | `query()` / `execute()` 基础 API |
+| 功能 | 描述 | 文件 |
+|------|------|------|
+| **Schema DSL** | 声明式表定义 | `lib/schema/` |
+| **Codegen 2.0** | 生成 Struct + CRUD + Query Builder | `lib/codegen/` |
+| **SQLite Driver** | 基础查询执行 | `lib/runtime/` |
+| **Runtime** | `query()` / `execute()` API | `lib/runtime/` |
 
 ---
 
@@ -390,8 +420,8 @@ orion introspect            # 查看数据库结构
 | 对比 | Orion 优势 |
 |------|-----------|
 | **vs MyBatis** | 类型安全 + Codegen + 现代 CLI |
-| **vs Prisma** | 无 DSL + SQL 可控 + 轻量级 |
-| **vs Drizzle** | Mapper 模式 + CLI 工具链 + MoonBit 原生 |
+| **vs Prisma** | MoonBit 原生语法 + 轻量级 |
+| **vs Drizzle** | Schema DSL + Query Builder + MoonBit 原生 |
 
 ---
 
@@ -402,84 +432,39 @@ orion introspect            # 查看数据库结构
 | 层级 | 技术 | 说明 |
 |------|------|------|
 | **CLI / Codegen** | MoonBit | 编译为 native，使用 C runtime |
-| **SQL Parser** | 复用 [moonbit-community/sqlparser](https://mooncakes.io/docs/moonbit-community/sqlparser) | 已有成熟的 SQL parser 包 |
+| **Schema DSL** | MoonBit 代码 | 原生语法定义表结构 |
 | **Runtime** | MoonBit | 连接池/事务/日志 |
 | **Database Driver** | 复用现有包 + 封装 | myfreess/sqlite3, mattn/postgres |
 
-### 10.2 现有生态包调研
+### 10.2 核心模块
 
-#### SQL Parser
-- **moonbit-community/sqlparser** - 通用 SQL 解析器
-- **Milky2018/sqlparser** - 可扩展 SQL Lexer 和 Parser
-  - 包含 `ast.mbt`, `lexer.mbt`, `parser.mbt`, `tokens.mbt`
-  - 支持 PostgreSQL, Snowflake 等 dialect
-  - GitHub: https://github.com/Milky2018/sqlparser-mbt
+```
+lib/schema/               - Schema DSL 定义
+  constraints.mbt         - 约束类型
+  schema.mbt             - TableSchema, FieldDef, TableSchemaBuilder
+  type_mapping.mbt       - MoonBit → SQL 类型映射
 
-#### 数据库驱动
-- **myfreess/sqlite3** (v0.1.5) - SQLite3 C FFI binding
-  - 轻量级 SQLite3 绑定
-  - GitHub: https://github.com/myfreess/sqlite3.mbt
-  - 使用 `@ffi.Sqlite3` 实现 native C FFI
+lib/codegen/             - 代码生成器
+  gen_schema.mbt         - 生成 Struct + derive
+  gen_crud.mbt           - 生成 CRUD 函数
+  gen_query_builder.mbt  - 生成 Query Builder
 
-- **mizchi/sqlite** (v0.2.3) - SQLite 驱动
-  - 支持 native (C FFI) 和 JavaScript (Node.js) 目标
+lib/runtime/             - 运行时
+  db.mbt                 - 数据库连接管理
+  pool.mbt               - 连接池
+  error.mbt              - 错误处理
 
-- **mattn/postgres** - PostgreSQL 客户端
-  - 使用 libpq C API
-  - 支持连接管理、简单查询和参数化查询
-
-#### 代码生成相关
-- **mizchi/sqlc_gen_moonbit** - SQLC MoonBit 代码生成器
-  - 支持 postgres, mysql_js, d1 等后端
-  - 可参考其代码生成策略
-
-### 10.3 为什么复用现有包？
-
-**优势：**
-- ✅ 避免重复造轮子，专注核心差异化
-- ✅ 社区包已验证可用性
-- ✅ 降低 MVP 开发时间（从 2 周缩短到 1 周）
-- ✅ 社区包维护者可能是潜在合作者
-
-**Orion 核心价值：**
-- SQL 文件规范和代码生成
-- Mapper 模式封装
-- CLI 工具链
-- 工程化体验
-
-### 10.4 数据库驱动实现策略
-
-Orion 不直接调用 C API，而是封装现有驱动：
-
-```moonbit
-// 基于 myfreess/sqlite3 或 mizchi/sqlite 封装
-struct SQLiteDriver {
-  conn: Sqlite3.Connection
-}
-
-impl Driver for SQLiteDriver {
-  fn query(sql: String, params: List[Value]) -> Result[ResultSet]
-  fn execute(sql: String, params: List[Value]) -> Result[Int]
-}
+lib/cli/                 - CLI 命令
+  cli.mbt                - 命令行解析
 ```
 
-PostgreSQL 和 MySQL 同理，通过统一接口封装。
+### 10.3 数据库驱动
 
----
-
-## 十一、待决策问题
-
-1. **struct 生成策略**：自动生成还是用户定义？
-   - 推荐：用户定义优先，自动生成作为可选功能
-
-2. **参数风格统一**：parser 层统一还是运行时转换？
-   - 推荐：parser 层统一为内部 AST，运行时按目标数据库转换
-
-3. **动态 SQL parser**：正则还是 AST？
-   - 推荐：轻量级 AST，正则解析 `[@if]` 标签
-
-4. **SQL parser 复杂度**：完整 SQL parser 还是只解析参数？
-   - 推荐：MVP 只解析 `-- name:` 和参数占位符，不解析完整 SQL
+| 驱动 | 状态 | 说明 |
+|------|------|------|
+| SQLite | ✅ 完成 | myfreess/sqlite3 |
+| PostgreSQL | v0.2.1 | mattn/postgres |
+| MySQL | v0.2.2 | 未来支持 |
 
 ---
 
@@ -490,8 +475,5 @@ PostgreSQL 和 MySQL 同理，通过统一接口封装。
 - [MyBatis](https://mybatis.org/)
 - [MoonBit 官方](https://www.moonbitlang.com/)
 - [MoonBit Updates](https://www.moonbitlang.com/updates/)
-- [moonbit-community/sqlparser](https://mooncakes.io/docs/moonbit-community/sqlparser)
-- [Milky2018/sqlparser-mbt](https://github.com/Milky2018/sqlparser-mbt)
 - [myfreess/sqlite3](https://mooncakes.io/docs/myfreess/sqlite3)
 - [mattn/postgres](https://mooncakes.io/docs/mattn/postgres)
-- [mizchi/sqlc_gen_moonbit](https://mooncakes.io/docs/mizchi/sqlc_gen_moonbit)

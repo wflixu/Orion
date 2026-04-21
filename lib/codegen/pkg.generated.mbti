@@ -3,18 +3,73 @@ package "wflixu/Orion/lib/codegen"
 
 import {
   "wflixu/Orion/lib/parser",
+  "wflixu/Orion/lib/schema",
 }
 
 // Values
+pub fn field_to_db_value(@schema.FieldType, String) -> String
+
+pub fn field_type_to_moonbit(@schema.FieldType) -> String
+
+pub fn gen_count_method(@schema.TableSchema) -> String
+
+pub fn gen_create_function(@schema.TableSchema) -> String
+
+pub fn gen_create_input_function(@schema.TableSchema) -> String
+
+pub fn gen_create_input_struct(@schema.TableSchema) -> String
+
+pub fn gen_delete_function(@schema.TableSchema) -> String
+
+pub fn gen_execute_method(@schema.TableSchema) -> String
+
+pub fn gen_find_all_function(@schema.TableSchema) -> String
+
+pub fn gen_find_by_id_function(@schema.TableSchema) -> String
+
+pub fn gen_first_method(@schema.TableSchema) -> String
+
 pub fn gen_from_db_value(String, Array[(String, String)]) -> String
 
+pub fn gen_from_row_function(@schema.TableSchema) -> String
+
+pub fn gen_full_crud(@schema.TableSchema) -> String
+
+pub fn gen_full_query_builder(@schema.TableSchema) -> String
+
+pub fn gen_full_struct(@schema.TableSchema) -> String
+
 pub fn gen_function(@parser.QueryMeta, String) -> String
+
+pub fn gen_limit_offset_methods(@schema.TableSchema) -> String
+
+pub fn gen_make_function(@schema.TableSchema) -> String
+
+pub fn gen_mapper_struct(@schema.TableSchema) -> String
+
+pub fn gen_new_mapper_function(@schema.TableSchema) -> String
+
+pub fn gen_new_query_function(@schema.TableSchema) -> String
+
+pub fn gen_order_by_methods(@schema.TableSchema) -> String
+
+pub fn gen_query_builder_struct(@schema.TableSchema) -> String
 
 pub fn gen_struct(String, Array[(String, String)]) -> String
 
 pub fn gen_struct_from_sql(String, String) -> String
 
+pub fn gen_update_function(@schema.TableSchema) -> String
+
+pub fn gen_where_like_methods(@schema.TableSchema) -> String
+
+pub fn gen_where_methods(@schema.TableSchema) -> String
+
 pub fn infer_fields_from_sql(String) -> Array[(String, String)]
+
+pub fn join_strings(Array[String], String) -> String
+
+pub fn select_columns(@schema.TableSchema) -> String
 
 pub fn sql_type_to_moonbit(String) -> String
 

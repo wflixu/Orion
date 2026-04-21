@@ -1,5 +1,5 @@
 import {
-  "wflixu/Orion/lib/parser",
+  "wflixu/Orion/lib/schema",
   "wflixu/Orion/lib/codegen",
   "moonbitlang/core/array",
   "moonbitlang/core/int",
