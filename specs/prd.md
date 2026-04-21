@@ -386,28 +386,28 @@ enum DbError {
 | derive 支持 | 为生成的 struct 自动添加 derive | P0 | ✅ 完成 |
 | CLI 增强 | `orion schema <dir>` 命令 | P0 | ✅ 完成 |
 
-### v0.3.0 - 生产就绪
+### v0.2.1 - 生产就绪
 
 | 功能 | 描述 |
 |------|------|
 | 事务支持 | `Orion.transaction(fn(tx) {...})` |
 | Migration CLI | `orion migrate up/down/create` |
 | PostgreSQL 支持 | 完整的 PG 驱动 |
-| 连接池增强 | 配置化 poolSize、timeout |
 
-### v0.4.0 - 高级特性
+### v0.2.2 - 增强特性
 
 | 功能 | 描述 |
 |------|------|
-| 动态 SQL | `[@if]...[@endif]` 语法支持 |
+| 高级查询构建器 | 链式查询增强 |
+| 连接池增强 | 配置化 poolSize、timeout |
 | MySQL 支持 | MySQL 驱动 |
 | 批量操作 | 批量 insert/update |
-| 关系定义 | hasOne, hasMany |
 
-### v0.5.0+ - 未来规划
+### v0.2.3+ - 未来规划
 
 | 功能 | 描述 |
 |------|------|
+| 关系定义 | hasOne, hasMany |
 | `orion pull` | 从数据库反向生成 schema |
 | 只读查询优化 | 读写分离支持 |
 | 多数据源 | 多数据库连接 |
