@@ -13,6 +13,13 @@ fn main {
         Err(e) => println("Error: " + e)
       }
     }
+    @cli.Command::Schema(dir) => {
+      let result = @cli.run_schema_subcommand(dir)
+      match result {
+        Ok(_) => ()
+        Err(e) => println("Error: " + e)
+      }
+    }
     @cli.Command::Migrate(subcmd) => {
       let result = @cli.run_migrate_subcommand(subcmd)
       match result {

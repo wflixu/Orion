@@ -8,6 +8,58 @@
 - **MyBatis**（Mapper 模式）
 - **Drizzle ORM**（类型安全）
 - **Prisma**（工程化体验）
+- **SeaORM**（Rust derive 模式）
+
+---
+
+## 一、项目定位（增强版 v0.2.0）
+
+**Orion v0.2.0 = Derive + Codegen ORM**
+
+在 v0.1 SQL-first 基础上，增加声明式 schema 定义，通过外部代码生成实现类型安全的 CRUD 操作。
+
+### 1.1 核心变更
+
+| 维度 | v0.1 SQL-first | v0.2 Derive + Codegen |
+|------|----------------|-----------------------|
+| 定义方式 | SQL 文件 | Schema DSL + derive |
+| 代码生成 | 从 SQL 生成 Mapper | 从 Schema 生成 Struct + CRUD |
+| 适用场景 | 复杂查询、SQL 可控 | 快速 CRUD、原型开发 |
+| 类型安全 | 编译时验证 | 编译时验证 |
+| 学习曲线 | 需要 SQL 知识 | MoonBit 原生语法 |
+
+### 1.2 MoonBit 语言限制与应对
+
+| 限制 | 影响 | 应对方案 |
+|------|------|----------|
+| ❌ 不支持用户自定义 derive | 无法 `derive(Entity)` | 外部代码生成器 |
+| ❌ 不支持字段级注解 | 无法标注 `@Id`, `@AutoInc` | Schema DSL 中定义 |
+| ❌ 不支持运行时反射 | 无法动态读取 schema | 编译时生成代码 |
+| ✅ 支持内置 derive | `derive(Eq, Hash, FromJson, ToJson)` | 为生成的 struct 自动添加 |
+
+### 1.3 技术选型
+
+**方案：Derive + 外部代码生成**
+
+```moonbit
+// 1. 用户定义 schema
+let user_schema = schema("user")
+  |> field("id", Int, [PrimaryKey, AutoInc])
+  |> field("name", String, [NotNull, MaxLength(100)])
+
+// 2. 运行代码生成器
+// orion gen schema/user.schema
+
+// 3. 生成的代码
+pub struct User {
+  id: Int,
+  name: String
+} derive(Eq, Hash, FromJson, ToJson, Show)
+
+// 生成的 CRUD 函数
+pub fn create_user(db: Db, name: String) -> Result[Int, DbError]
+pub fn find_user_by_id(db: Db, id: Int) -> Result[Option[User], DbError]
+```
 
 ---
 
@@ -180,7 +232,7 @@ moon test -j  # 并行测试
 | **动态 SQL** | 自定义语法 | 更适合 MoonBit，避免 XML 繁琐 |
 | **代码生成** | Mapper 模式 | 平衡简洁性和组织性 |
 | **数据库支持** | 同时支持 SQLite/Postgres/MySQL | 用户需求驱动 |
-| **DSL** | ❌ 不做 | SQL 已经够强，MoonBit 类型系统足够 |
+| **DSL (v0.2.0)** | ✅ Schema DSL | MoonBit 原生语法，无需学习新 DSL |
 | **Query Builder** | ❌ 初期不做 | 聚焦核心 |
 
 ---
@@ -304,27 +356,37 @@ enum DbError {
 
 采用语义化版本，基于 0.1.x 迭代，MVP 完成后升级 0.2.x
 
-### v0.1.0 - MVP (2 周)
+### v0.1.0 - MVP (2 周) ✅
 
 | 功能 | 描述 | 状态 |
 |------|------|------|
-| SQL Parser | 解析 `.sql` 文件，提取 `-- name:` 和参数 | 核心 |
-| Codegen | 生成函数签名 + struct | 核心 |
-| SQLite Driver | 基础查询执行 | 核心 |
-| Runtime | `query()` / `execute()` 基础 API | 核心 |
+| SQL Parser | 解析 `.sql` 文件，提取 `-- name:` 和参数 | ✅ |
+| Codegen | 生成函数签名 + struct | ✅ |
+| SQLite Driver | 基础查询执行 | ✅ |
+| Runtime | `query()` / `execute()` 基础 API | ✅ |
 
-### v0.1.1 - v0.1.x 迭代
+### v0.1.1 - v0.1.x 迭代 ✅
 
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
-| 连接池 | 基础连接管理 | P0 |
-| 错误处理 | `DbError` 枚举 + 错误转换 | P0 |
-| 日志系统 | Debug 日志输出 | P1 |
-| 参数风格 | 支持 `?` 和 `$1` 两种风格 | P1 |
+| 连接池 | 基础连接管理 | ✅ P0 |
+| 错误处理 | `DbError` 枚举 + 错误转换 | ✅ P0 |
+| 日志系统 | Debug 日志输出 | ✅ P1 |
+| 参数风格 | 支持 `?` 和 `$1` 两种风格 | ✅ P1 |
 
-### v0.2.0 - 生产就绪 (MVP+)
+### v0.2.0 - Derive + Codegen ORM ✅
 
 在 v0.1.x 基础上添加：
+
+| 功能 | 描述 | 优先级 | 状态 |
+|------|------|--------|------|
+| Schema DSL | 声明式表定义语法 | P0 | ✅ 完成 |
+| Codegen 2.0 | 从 Schema 生成 Struct + CRUD | P0 | ✅ 完成 |
+| Query Builder | 链式查询构建器 | P0 | ✅ 完成 |
+| derive 支持 | 为生成的 struct 自动添加 derive | P0 | ✅ 完成 |
+| CLI 增强 | `orion schema <dir>` 命令 | P0 | ✅ 完成 |
+
+### v0.3.0 - 生产就绪
 
 | 功能 | 描述 |
 |------|------|
@@ -333,20 +395,20 @@ enum DbError {
 | PostgreSQL 支持 | 完整的 PG 驱动 |
 | 连接池增强 | 配置化 poolSize、timeout |
 
-### v0.3.0 - 高级特性
+### v0.4.0 - 高级特性
 
 | 功能 | 描述 |
 |------|------|
 | 动态 SQL | `[@if]...[@endif]` 语法支持 |
 | MySQL 支持 | MySQL 驱动 |
 | 批量操作 | 批量 insert/update |
-| 性能优化 | 查询缓存、预编译优化 |
+| 关系定义 | hasOne, hasMany |
 
-### v0.4.0+ - 未来规划
+### v0.5.0+ - 未来规划
 
 | 功能 | 描述 |
 |------|------|
-| `orion pull` | 从数据库反向生成 |
+| `orion pull` | 从数据库反向生成 schema |
 | 只读查询优化 | 读写分离支持 |
 | 多数据源 | 多数据库连接 |
 

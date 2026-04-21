@@ -22,6 +22,8 @@ pub fn run_migrate(String) -> Result[Unit, String]
 
 pub fn run_migrate_subcommand(MigrateSubcommand) -> Result[Unit, String]
 
+pub fn run_schema_subcommand(String) -> Result[Unit, String]
+
 pub fn show_help() -> Unit
 
 // Errors
@@ -29,6 +31,7 @@ pub fn show_help() -> Unit
 // Types and methods
 pub enum Command {
   Generate(String)
+  Schema(String)
   Migrate(MigrateSubcommand)
   Help
 }
