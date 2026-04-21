@@ -22,7 +22,8 @@
       "mcp__chrome-devtools__evaluate_script",
       "Bash(moon info:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(moon build:*)"
     ]
   }
 }
