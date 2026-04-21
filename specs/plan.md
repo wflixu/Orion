@@ -178,7 +178,6 @@ let users = new_users_query(db)
 
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
-| 动态 SQL 支持 | `[@if]...[@endif]` 语法 | P0 |
 | 事务支持 | `Orion.transaction(fn(tx) {...})` | P0 |
 | Migration CLI | `orion migrate up/down/create` | P0 |
 | PostgreSQL 驱动完善 | 完整 PG 驱动支持 | P0 |
