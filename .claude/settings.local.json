@@ -16,7 +16,13 @@
       "WebFetch(domain:github.com)",
       "Bash(xargs cat:*)",
       "Bash(moon run:*)",
-      "Bash(moon check:*)"
+      "Bash(moon check:*)",
+      "Bash(curl -s \"https://mooncakes.io/docs\")",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__evaluate_script",
+      "Bash(moon info:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

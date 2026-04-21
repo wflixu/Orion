@@ -11,18 +11,35 @@ Orion 是一个 SQL-first、类型安全的数据访问层，采用 Mapper 模�
 - **Mapper 模式**: 一个 SQL 语句对应一个函数
 - **工程化**: CLI 工具链支持开发、构建、迁移全流程
 
-### 1.2 约束条件
+### 1.2 设计目标 (v0.2.0 增强)
+
+- **Derive + Codegen**: 声明式 schema 定义，自动生成 Struct + CRUD
+- **内置 derive 支持**: 为生成的代码自动添加 `Eq`, `Hash`, `FromJson`, `ToJson`
+- **Schema DSL**: MoonBit 原生语法定义表结构
+
+### 1.3 约束条件
 
 - 全 MoonBit 技术栈（CLI、Runtime、Driver 封装）
 - 复用现有社区包（sqlparser、sqlite3、postgres）
 - 支持 native 编译（C runtime）
 - MVP 范围最小化（2 周内完成）
 
+### 1.4 MoonBit 语言限制与应对
+
+| 限制 | 影响 | 应对方案 |
+|------|------|----------|
+| ❌ 不支持用户自定义 derive | 无法 `derive(Entity)` | 外部代码生成器 |
+| ❌ 不支持字段级注解 | 无法标注 `@Id`, `@AutoInc` | Schema DSL 中定义 |
+| ❌ 不支持运行时反射 | 无法动态读取 schema | 编译时生成代码 |
+| ✅ 支持内置 derive | `derive(Eq, Hash, FromJson, ToJson)` | 为生成的 struct 自动添加 |
+
 ---
 
 ## 2. 系统架构
 
 ### 2.1 整体架构图
+
+#### v0.1 架构 (SQL-first)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -71,14 +88,16 @@ Orion 是一个 SQL-first、类型安全的数据访问层，采用 Mapper 模�
 
 ### 2.2 核心组件
 
-| 组件 | 职责 | 实现方式 |
-|------|------|----------|
-| **SQL Parser** | 解析 `.sql` 文件，提取查询元数据 | 复用 moonbit-community/sqlparser |
-| **Type Analyzer** | 从 SQL 推导输入/输出类型 | Orion 自研 |
-| **Code Generator** | 生成 MoonBit Mapper 代码 | Orion 自研 |
-| **Runtime** | 连接池、事务、日志、错误处理 | Orion 自研 |
-| **Driver Adapter** | 统一数据库驱动接口 | 封装社区包 |
-| **CLI** | 代码生成、迁移管理 | Orion 自研 |
+| 组件 | 职责 | 实现方式 | 版本 |
+|------|------|----------|------|
+| **SQL Parser** | 解析 `.sql` 文件，提取查询元数据 | 复用 moonbit-community/sqlparser | v0.1 |
+| **Type Analyzer** | 从 SQL 推导输入/输出类型 | Orion 自研 | v0.1 |
+| **Code Generator** | 生成 MoonBit Mapper 代码 | Orion 自研 | v0.1 |
+| **Schema DSL** | 声明式表定义 | Orion 自研 | v0.2 |
+| **Codegen 2.0** | 从 Schema 生成 Struct + CRUD | Orion 自研 | v0.2 |
+| **Runtime** | 连接池、事务、日志、错误处理 | Orion 自研 | v0.1 |
+| **Driver Adapter** | 统一数据库驱动接口 | 封装社区包 | v0.1 |
+| **CLI** | 代码生成、迁移管理 | Orion 自研 | v0.1 |
 
 ---
 
@@ -868,17 +887,463 @@ impl CodeGenerator {
 
 ---
 
-## 7. 运行时实现
+## 7. Schema DSL 设计 (v0.2.0)
 
-### 7.1 连接池设计（并发安全）
+### 7.1 Schema DSL 语法
+
+```moonbit
+// schema/user.schema.mbt
+
+import orion.schema
+
+let user_schema = schema("user")
+  |> field("id", Int, [PrimaryKey, AutoInc])
+  |> field("name", String, [NotNull, MaxLength(100)])
+  |> field("email", String, [Unique, NotNull])
+  |> field("created_at", String, [Default("CURRENT_TIMESTAMP")])
+  |> index("idx_email", ["email"])
+```
+
+### 7.2 约束类型定义
+
+```moonbit
+// lib/schema/constraints.mbt
+
+/// 字段约束
+enum Constraint {
+  /// 主键
+  PrimaryKey
+  /// 自增
+  AutoInc
+  /// 非空
+  NotNull
+  /// 唯一
+  Unique
+  /// 默认值
+  Default(String)
+  /// 最大长度
+  MaxLength(Int)
+  /// 索引
+  Index
+  /// 外键引用
+  ForeignKey(String, String)
+}
+
+/// 索引定义
+struct IndexDef {
+  name: String
+  columns: List[String]
+  unique: Bool
+}
+```
+
+### 7.3 Schema 结构定义
+
+```moonbit
+// lib/schema/schema.mbt
+
+/// 表 Schema
+struct TableSchema {
+  /// 表名
+  name: String
+  /// 字段列表
+  fields: List[FieldDef]
+  /// 索引列表
+  indexes: List[IndexDef]
+  /// 主键字段
+  primary_key: Option[String]
+}
+
+/// 字段定义
+struct FieldDef {
+  /// 字段名
+  name: String
+  /// MoonBit 类型
+  mb_type: String
+  /// 数据库类型
+  db_type: String
+  /// 约束列表
+  constraints: List[Constraint]
+}
+
+/// 创建 Schema 定义
+fn schema(table_name: String) -> TableSchemaBuilder {
+  TableSchemaBuilder::new(table_name)
+}
+
+/// Schema Builder（链式调用）
+struct TableSchemaBuilder {
+  name: String
+  fields: List[FieldDef]
+  indexes: List[IndexDef]
+}
+
+impl TableSchemaBuilder {
+  fn new(name: String) -> TableSchemaBuilder {
+    TableSchemaBuilder {
+      name: name,
+      fields: [],
+      indexes: []
+    }
+  }
+  
+  fn field(
+    mut self,
+    name: String,
+    typ: String,
+    constraints: List[Constraint]
+  ) -> Self {
+    let db_type = moonbit_type_to_sql_type(typ, constraints)
+    self.fields.push(FieldDef {
+      name: name,
+      mb_type: typ,
+      db_type: db_type,
+      constraints: constraints
+    })
+    self
+  }
+  
+  fn index(mut self, name: String, columns: List[String], unique: Bool = false) -> Self {
+    self.indexes.push(IndexDef {
+      name: name,
+      columns: columns,
+      unique: unique
+    })
+    self
+  }
+  
+  fn build(self) -> TableSchema {
+    let primary_key = self.fields
+      .filter(fn(f) => List::contains(f.constraints, Constraint::PrimaryKey))
+      .map(fn(f) => f.name)
+      .head()
+    
+    TableSchema {
+      name: self.name,
+      fields: self.fields,
+      indexes: self.indexes,
+      primary_key: primary_key
+    }
+  }
+}
+```
+
+### 7.4 类型映射
+
+```moonbit
+// lib/schema/type_mapping.mbt
+
+/// MoonBit 类型到 SQL 类型映射
+fn moonbit_type_to_sql_type(
+  mb_type: String,
+  constraints: List[Constraint]
+) -> String {
+  let max_length = get_max_length(constraints)
+  
+  match mb_type {
+    "Int" => "INTEGER"
+    "String" => {
+      match max_length {
+        Some(len) => "VARCHAR({})".format([len])
+        None => "TEXT"
+      }
+    }
+    "Bool" => "BOOLEAN"
+    "Double" => "REAL"
+    "Int64" => "BIGINT"
+    _ => "TEXT"  // 默认
+  }
+}
+
+fn get_max_length(constraints: List[Constraint]) -> Option[Int] {
+  constraints
+    .filter_map(fn(c) => {
+      match c {
+        Constraint::MaxLength(len) => Some(len)
+        _ => None
+      }
+    })
+    .head()
+}
+```
+
+---
+
+## 8. Codegen 2.0 (v0.2.0)
+
+### 8.1 生成的代码结构
+
+对于以下 Schema：
+
+```moonbit
+let user_schema = schema("user")
+  |> field("id", Int, [PrimaryKey, AutoInc])
+  |> field("name", String, [NotNull, MaxLength(100)])
+```
+
+生成的 MoonBit 代码：
+
+```moonbit
+// generated/user.mbt
+// @generated by Orion v0.2.0
+
+/// User 数据模型
+pub struct User {
+  id: Int,
+  name: String
+} derive(Eq, Hash, FromJson, ToJson, Show)
+
+/// 创建 User 实例（所有字段）
+pub fn make_user(id: Int, name: String) -> User {
+  User { id, name }
+}
+
+/// 创建 User 实例（仅必填字段，自增字段省略）
+pub fn create_user_input(name: String) -> CreateUserInput {
+  CreateUserInput { name }
+}
+
+pub struct CreateUserInput {
+  name: String
+}
+```
+
+### 8.2 生成的 CRUD 函数
+
+```moonbit
+// generated/user_mapper.mbt
+// @generated by Orion v0.2.0
+
+import orion.runtime.{Db, DbError, DbValue}
+
+/// UserMapper 模块
+pub struct UserMapper {
+  db: Db
+}
+
+/// 创建 UserMapper
+pub fn new_user_mapper(db: Db) -> UserMapper {
+  UserMapper { db }
+}
+
+// === CRUD 函数 ===
+
+/// 创建用户
+/// @returns 最后插入的 ID
+pub fn create_user(self: UserMapper, name: String) -> Result[Int, DbError] {
+  let sql = "INSERT INTO user (name) VALUES (?)"
+  orion.execute(self.db, sql, [DbValue::String(name)])
+}
+
+/// 根据 ID 查找用户
+pub fn find_user_by_id(self: UserMapper, id: Int) -> Result[Option[User], DbError] {
+  let sql = "SELECT id, name FROM user WHERE id = ?"
+  match orion.query(self.db, sql, [DbValue::Int(id)]) {
+    Ok(rows) => {
+      if rows.length() > 0 {
+        Ok(Some(User::from_row(rows[0])))
+      } else {
+        Ok(None)
+      }
+    }
+    Err(e) => Err(e)
+  }
+}
+
+/// 查找所有用户
+pub fn find_all_users(self: UserMapper) -> Result[List[User], DbError] {
+  let sql = "SELECT id, name FROM user"
+  match orion.query(self.db, sql, []) {
+    Ok(rows) => {
+      Ok(rows.map(fn(row) => User::from_row(row)))
+    }
+    Err(e) => Err(e)
+  }
+}
+
+/// 更新用户
+pub fn update_user(self: UserMapper, id: Int, name: String) -> Result[Int, DbError] {
+  let sql = "UPDATE user SET name = ? WHERE id = ?"
+  orion.execute(self.db, sql, [DbValue::String(name), DbValue::Int(id)])
+}
+
+/// 删除用户
+pub fn delete_user_by_id(self: UserMapper, id: Int) -> Result[Int, DbError] {
+  let sql = "DELETE FROM user WHERE id = ?"
+  orion.execute(self.db, sql, [DbValue::Int(id)])
+}
+```
+
+### 8.3 生成的 Query Builder（可选）
+
+```moonbit
+// generated/user_query.mbt
+// @generated by Orion v0.2.0
+
+/// User 查询构建器
+pub struct UserQuery {
+  db: Db
+  where_clauses: List[String]
+  params: List[DbValue]
+  order_by: Option[String]
+  limit: Option[Int]
+  offset: Option[Int]
+}
+
+/// 创建查询构建器
+pub fn UserQuery::new(db: Db) -> UserQuery {
+  UserQuery {
+    db: db,
+    where_clauses: [],
+    params: [],
+    order_by: None,
+    limit: None,
+    offset: None
+  }
+}
+
+/// 链式条件：WHERE id = ?
+pub fn UserQuery::where_id(mut self, id: Int) -> Self {
+  self.where_clauses.push("id = ?")
+  self.params.push(DbValue::Int(id))
+  self
+}
+
+/// 链式条件：WHERE name = ?
+pub fn UserQuery::where_name(mut self, name: String) -> Self {
+  self.where_clauses.push("name = ?")
+  self.params.push(DbValue::String(name))
+  self
+}
+
+/// 链式条件：WHERE name LIKE ?
+pub fn UserQuery::where_name_contains(mut self, pattern: String) -> Self {
+  self.where_clauses.push("name LIKE ?")
+  self.params.push(DbValue::String("%" + pattern + "%"))
+  self
+}
+
+/// 排序
+pub fn UserQuery::order_by_id(mut self, desc: Bool = false) -> Self {
+  self.order_by = Some("id " + (if desc { "DESC" } else { "ASC" }))
+  self
+}
+
+/// 限制结果数量
+pub fn UserQuery::limit(mut self, n: Int) -> Self {
+  self.limit = Some(n)
+  self
+}
+
+/// 偏移量
+pub fn UserQuery::offset(mut self, n: Int) -> Self {
+  self.offset = Some(n)
+  self
+}
+
+/// 执行查询
+pub fn UserQuery::execute(self) -> Result[List[User], DbError] {
+  let mut sql = "SELECT id, name FROM user"
+  
+  if self.where_clauses.length() > 0 {
+    sql = sql + " WHERE " + String::join(self.where_clauses, " AND ")
+  }
+  
+  if self.order_by != None {
+    sql = sql + " ORDER BY " + self.order_by.get()
+  }
+  
+  if self.limit != None {
+    sql = sql + " LIMIT " + Int::to_string(self.limit.get())
+  }
+  
+  if self.offset != None {
+    sql = sql + " OFFSET " + Int::to_string(self.offset.get())
+  }
+  
+  match orion.query(self.db, sql, self.params) {
+    Ok(rows) => Ok(rows.map(fn(row) => User::from_row(row)))
+    Err(e) => Err(e)
+  }
+}
+
+/// 执行查询，返回单条结果
+pub fn UserQuery::first(self) -> Result[Option[User], DbError] {
+  self.limit(1).execute().map(fn(list) => list.head())
+}
+```
+
+### 8.4 Codegen 2.0 实现
+
+```moonbit
+// lib/codegen/gen_schema.mbt
+
+/// Schema 代码生成器
+struct SchemaCodeGenerator {
+  output_dir: String
+  gen_builder: Bool  // 是否生成 QueryBuilder
+}
+
+impl SchemaCodeGenerator {
+  fn new(output_dir: String) -> SchemaCodeGenerator {
+    SchemaCodeGenerator {
+      output_dir: output_dir,
+      gen_builder: true
+    }
+  }
+  
+  /// 从 Schema 生成代码
+  fn generate(self, schema: TableSchema) -> Result[Unit, String] {
+    let struct_name = to_pascal_case(schema.name)
+    
+    // 生成 struct
+    let struct_code = self.gen_struct(schema, struct_name)
+    self.write_file(struct_code, "{}/{}.mbt".format([self.output_dir, struct_name.to_lower()]))
+    
+    // 生成 CRUD
+    let mapper_code = self.gen_mapper(schema, struct_name)
+    self.write_file(mapper_code, "{}/{}_mapper.mbt".format([self.output_dir, struct_name.to_lower()]))
+    
+    // 生成 QueryBuilder (可选)
+    if self.gen_builder {
+      let builder_code = self.gen_query_builder(schema, struct_name)
+      self.write_file(builder_code, "{}/{}_query.mbt".format([self.output_dir, struct_name.to_lower()]))
+    }
+    
+    Ok(())
+  }
+  
+  /// 生成 struct 定义（带 derive）
+  fn gen_struct(self, schema: TableSchema, struct_name: String) -> String {
+    let fields = schema.fields.map(fn(f) => {
+      "  {}: {}".format([f.name, f.mb_type])
+    })
+    
+    """
+    // @generated by Orion v0.2.0
+    
+    /// {struct_name} 数据模型
+    pub struct {struct_name} {{
+    {fields.join(",\n")}
+    }} derive(Eq, Hash, FromJson, ToJson, Show)
+    """
+  }
+}
+```
+
+---
+
+## 9. 运行时实现
+
+### 9.1 连接池设计（并发安全）
 
 详见 4.3 节。
 
-### 7.2 事务支持
+### 9.2 事务支持
 
 详见 4.5 节。
 
-### 7.3 日志系统
+### 9.3 日志系统
 
 ```moonbit
 // lib/runtime/log.mbt
@@ -973,9 +1438,9 @@ fn logged_query(
 
 ---
 
-## 8. CLI 设计
+## 10. CLI 设计
 
-### 8.1 命令结构
+### 10.1 命令结构
 
 ```moonbit
 // cmd/orion/main.mbt
@@ -1030,7 +1495,7 @@ fn main {
 }
 ```
 
-### 8.2 代码生成命令流程
+### 10.2 代码生成命令流程
 
 ```moonbit
 fn cmd_gen(input: String, output: String, watch: Bool) {
@@ -1079,19 +1544,19 @@ fn cmd_gen(input: String, output: String, watch: Bool) {
 
 ---
 
-## 9. 错误处理
+## 11. 错误处理
 
 详见 4.6 节。
 
 ---
 
-## 10. 日志系统
+## 12. 日志系统
 
-详见 7.3 节。
+详见 9.3 节。
 
 ---
 
-## 11. 测试策略
+## 13. 测试策略
 
 ### 11.1 测试分层
 
@@ -1171,7 +1636,7 @@ test fn test_pool_concurrent_acquire {
 
 ---
 
-## 12. 里程碑与交付物
+## 14. 里程碑与交付物
 
 ### v0.1.0 MVP
 
@@ -1194,10 +1659,24 @@ test fn test_pool_concurrent_acquire {
 - [ ] 日志系统 (`lib/runtime/log.mbt`)
 - [ ] PostgreSQL Adapter
 
-### v0.2.0
+### v0.2.0 - Derive + Codegen ORM ✅
+
+| 功能 | 文件 | 状态 |
+|------|------|------|
+| Schema DSL | `lib/schema/schema.mbt` | ✅ 完成 |
+| Codegen 2.0 | `lib/codegen/gen_schema.mbt`, `gen_crud.mbt`, `gen_query_builder.mbt` | ✅ 完成 |
+| derive 支持 | 为生成的 struct 自动添加 `Eq, Hash, FromJson, ToJson, Show` | ✅ 完成 |
+| CLI 增强 | `orion schema <dir>` 命令 (`lib/cli/cli.mbt`) | ✅ 完成 |
+| 集成测试 | 190 tests passed | ✅ 完成 |
+
+### v0.3.0 - 生产就绪
 
 - [ ] 事务支持完善（嵌套事务）
 - [ ] Migration CLI
+- [ ] PostgreSQL Adapter
+
+### v0.4.0 - 高级特性
+
 - [ ] Schema 感知类型推导
 - [ ] 动态 SQL 支持
 
